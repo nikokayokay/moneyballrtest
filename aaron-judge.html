@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aaron Judge — DataBallr Player Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060912;--surface:#0d1221;--surface2:#111827;--card:#0f1629;--border:rgba(255,255,255,.08);
+  --text:#e8eaf0;--text2:#93a4be;--text3:#64748b;--green:#00e676;--orange:#ff6b35;--gold:#ffd700;--blue:#7fb4ff;--red:#ff4757;
+  --display:'Bebas Neue',sans-serif;--cond:'Barlow Condensed',sans-serif;--body:'Barlow',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:radial-gradient(circle at top,#152340 0%,#08111f 40%,#060912 100%);color:var(--text);font-family:var(--body);line-height:1.55}
+a{text-decoration:none;color:inherit}
+.shell{max-width:1480px;margin:0 auto;padding:28px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.back{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text2)}
+.eyebrow{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
+.hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:32px;padding:36px;background:
+radial-gradient(circle at 82% 20%, rgba(127,180,255,.18), transparent 30%),
+linear-gradient(135deg,#10192f 0%,#08101f 55%,#050914 100%);
+box-shadow:0 25px 80px rgba(0,0,0,.45)}
+.hero-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:end}
+.hero-main{display:flex;gap:22px;align-items:center}
+.headshot-wrap{width:180px;height:204px;border-radius:24px;overflow:hidden;border:1px solid var(--border);background:#0b1323;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.headshot-wrap img{width:100%;height:100%;object-fit:cover;object-position:top}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.badge{padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text2)}
+.badge.accent{background:var(--blue);border-color:transparent;color:#07101f}
+.hero-name{font-family:var(--display);font-size:72px;letter-spacing:.08em;line-height:.92}
+.hero-meta{margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;font:600 15px var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
+.hero-copy{margin-top:16px;max-width:760px;color:var(--text2);font-size:15px;line-height:1.8}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.quick-card{border:1px solid var(--border);border-radius:22px;background:rgba(255,255,255,.04);padding:16px}
+.quick-label{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
+.quick-value{margin-top:10px;font-family:var(--display);font-size:36px;letter-spacing:.08em;line-height:1;color:var(--text)}
+.elite{color:var(--green)} .strong{color:var(--gold)} .impact{color:var(--blue)}
+.content{margin-top:26px;display:grid;grid-template-columns:1.35fr .95fr;gap:22px}
+.stack{display:flex;flex-direction:column;gap:22px}
+.section{border:1px solid var(--border);border-radius:26px;background:rgba(13,18,33,.95);overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.section-head{padding:22px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.section-title{font-family:var(--display);font-size:30px;letter-spacing:.08em}
+.section-sub{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3);margin-top:4px}
+.section-body{padding:22px 24px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat-card{border:1px solid var(--border);border-radius:22px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02))}
+.stat-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stat-name{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
+.demo{padding:4px 7px;border-radius:999px;border:1px solid rgba(255,215,0,.22);background:rgba(255,215,0,.1);font:500 9px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#ffec8f}
+.stat-value{margin-top:16px;font-family:var(--display);font-size:44px;letter-spacing:.08em;line-height:1}
+.stat-note{margin-top:12px;font-size:13px;color:var(--text2);line-height:1.7}
+.split-grid{display:grid;gap:14px}
+.split-card{border:1px solid var(--border);border-radius:22px;padding:18px;background:rgba(255,255,255,.03)}
+.split-title{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
+.split-line{margin-top:14px;font-family:var(--display);font-size:36px;letter-spacing:.08em;line-height:1}
+.split-detail{margin-top:12px;font-size:13px;color:var(--text2)}
+.table-wrap{overflow:hidden;border:1px solid var(--border);border-radius:22px}
+table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.02)}
+th,td{padding:14px 16px;text-align:left}
+th{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3);background:rgba(255,255,255,.03)}
+td{border-top:1px solid var(--border);font-size:13px}
+.pill{display:inline-flex;padding:5px 9px;border-radius:999px;font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.pill.impact{background:rgba(0,230,118,.12);color:#9ef8c7}.pill.steady{background:rgba(255,255,255,.06);color:#c8d3e4}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter{cursor:pointer;padding:9px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--text2)}
+.filter.active{background:var(--blue);border-color:var(--blue);color:#07101f}
+.zone-layout{display:grid;grid-template-columns:1.25fr .95fr;gap:18px}
+.zone-card{position:relative;border:1px solid var(--border);border-radius:24px;padding:16px;background:#07101f;overflow:hidden}
+.zone-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.05),transparent 65%);pointer-events:none}
+.tooltip{position:absolute;top:18px;right:18px;width:260px;border:1px solid var(--border);border-radius:18px;background:rgba(15,23,39,.96);padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.45);backdrop-filter:blur(12px);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s ease;pointer-events:none}
+.tooltip.visible{opacity:1;visibility:visible;transform:translateY(0)}
+.tooltip.pinned{pointer-events:auto}
+.tooltip-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tooltip-title{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
+.tooltip-desc{margin-top:8px;font-size:15px;font-weight:600}
+.tooltip-grid{margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px;color:var(--text2)}
+.tooltip-chip{display:inline-flex;margin-top:10px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.05);font:500 9px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#cdd8e8}
+.tooltip-close{display:inline-flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);font:600 15px/1 var(--mono);cursor:pointer;transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.tooltip-close:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);transform:scale(1.03)}
+.legend-grid,.break-grid{display:grid;gap:10px}
+.legend-grid{grid-template-columns:repeat(2,1fr)}
+.legend-item,.break-item{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.03);padding:12px 14px}
+.legend-item{display:flex;align-items:center;gap:12px;font-size:12px}
+.mark{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.hr-pulse{filter:drop-shadow(0 0 8px rgba(255,62,181,.7)) drop-shadow(0 0 18px rgba(255,62,181,.45))}
+.break-grid{grid-template-columns:repeat(2,1fr)}
+.break-label{font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--text3)}
+.break-value{margin-top:10px;font-family:var(--display);font-size:28px;letter-spacing:.08em;line-height:1}
+.footer-space{height:40px}
+@media (max-width:1100px){.hero-grid,.content,.zone-layout{grid-template-columns:1fr}.quick-grid,.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){.shell{padding:18px}.hero{padding:24px}.hero-main{flex-direction:column;align-items:flex-start}.hero-name{font-size:52px}.quick-grid,.stat-grid,.legend-grid,.break-grid{grid-template-columns:1fr}.headshot-wrap{width:150px;height:176px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="topbar-actions">
+      <a class="back" href="./players.html">← Back To Players</a>
+      <a class="back" href="./dashboard.html?player=592450">Open In Dashboard</a>
+    </div>
+    <div class="eyebrow">DataBallr Player Lab</div>
+  </div>
+
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-main">
+        <div class="headshot-wrap"><img src="https://a.espncdn.com/combiner/i?img=/i/headshots/mlb/players/full/33192.png&w=350&h=254" alt="Aaron Judge"></div>
+        <div>
+          <div class="badges">
+            <span class="badge">New York Yankees</span>
+            <span class="badge accent">Captain</span>
+            <span class="badge">Verified Apr 3, 2026</span>
+          </div>
+          <div class="hero-name">Aaron Judge</div>
+          <div class="hero-meta"><span>#99</span><span>•</span><span>RF</span><span>•</span><span>R/R</span><span>•</span><span>Age 33</span></div>
+          <p class="hero-copy">A superstar power-and-patience profile translated into the same modern DataBallr player lab format. This page leans into Judge’s premium zone control, massive damage on contact, and clean visual storytelling without falling back into spreadsheet styling.</p>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <div class="quick-card"><div class="quick-label">AVG</div><div class="quick-value">.185</div></div>
+        <div class="quick-card"><div class="quick-label">OPS</div><div class="quick-value">.785</div></div>
+        <div class="quick-card"><div class="quick-label">HR</div><div class="quick-value impact">3</div></div>
+        <div class="quick-card"><div class="quick-label">RBI</div><div class="quick-value strong">6</div></div>
+        <div class="quick-card"><div class="quick-label">BB</div><div class="quick-value elite">2</div></div>
+        <div class="quick-card"><div class="quick-label">SO</div><div class="quick-value">12</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <div class="stack">
+      <section class="section"><div class="section-head"><div><div class="section-title">Overview</div><div class="section-sub">Verified live totals as of Apr 3, 2026</div></div></div><div class="section-body"><div class="stat-grid">
+        <div class="stat-card"><div class="stat-name">Games</div><div class="stat-value">7</div><div class="stat-note">Verified on ESPN player overview.</div></div>
+        <div class="stat-card"><div class="stat-name">AB</div><div class="stat-value">27</div><div class="stat-note">Current 2026 MLB total.</div></div>
+        <div class="stat-card"><div class="stat-name">Hits</div><div class="stat-value">5</div><div class="stat-note">Through April 3, 2026.</div></div>
+        <div class="stat-card"><div class="stat-name">Runs</div><div class="stat-value">4</div><div class="stat-note">Verified current season total.</div></div>
+        <div class="stat-card"><div class="stat-name">Walks</div><div class="stat-value elite">2</div><div class="stat-note">Current plate-discipline count.</div></div>
+        <div class="stat-card"><div class="stat-name">Strikeouts</div><div class="stat-value">12</div><div class="stat-note">Verified current season total.</div></div>
+      </div></div></section>
+
+      <section class="section"><div class="section-head"><div><div class="section-title">Advanced Batting</div><div class="section-sub">Verified where available, demo-labeled where not</div></div></div><div class="section-body"><div class="stat-grid">
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">AVG</div></div><div class="stat-value">.185</div><div class="stat-note">Verified ESPN overview stat.</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">OPS</div></div><div class="stat-value">.785</div><div class="stat-note">Verified ESPN overview stat.</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">HR</div></div><div class="stat-value impact">3</div><div class="stat-note">Verified current 2026 total.</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">RBI</div></div><div class="stat-value strong">6</div><div class="stat-note">Verified current 2026 total.</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">BB%</div><div class="demo">Demo</div></div><div class="stat-value">6.9%</div><div class="stat-note">Approximate demo rate from current totals.</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-name">K%</div><div class="demo">Demo</div></div><div class="stat-value">41.4%</div><div class="stat-note">Approximate demo rate from current totals.</div></div>
+      </div></div></section>
+
+      <section class="section">
+        <div class="section-head"><div><div class="section-title">Strike Zone</div><div class="section-sub">Judge damage map with pinned pitch detail</div></div></div>
+        <div class="section-body">
+          <div class="filters">
+            <button class="filter active" data-filter="all">All Pitches</button>
+            <button class="filter" data-filter="swings">Swings Only</button>
+            <button class="filter" data-filter="takes">Takes Only</button>
+            <button class="filter" data-filter="inplay">In Play</button>
+            <button class="filter" data-filter="zone">In Zone</button>
+            <button class="filter" data-filter="outzone">Out of Zone</button>
+          </div>
+          <div class="zone-layout">
+            <div class="zone-card">
+              <svg id="zone-svg" viewBox="0 0 360 420" style="width:100%;height:420px;display:block;position:relative">
+                <g opacity=".55">
+                  <line x1="0" y1="84" x2="360" y2="84" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="0" y1="168" x2="360" y2="168" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="0" y1="252" x2="360" y2="252" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="0" y1="336" x2="360" y2="336" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="72" y1="0" x2="72" y2="420" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="144" y1="0" x2="144" y2="420" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="216" y1="0" x2="216" y2="420" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                  <line x1="288" y1="0" x2="288" y2="420" stroke="rgba(255,255,255,.08)" stroke-dasharray="4 8"/>
+                </g>
+                <rect x="97" y="113" width="166" height="162" rx="16" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+                <line x1="152" y1="113" x2="152" y2="275" stroke="rgba(255,255,255,.14)"/>
+                <line x1="207" y1="113" x2="207" y2="275" stroke="rgba(255,255,255,.14)"/>
+                <line x1="97" y1="167" x2="263" y2="167" stroke="rgba(255,255,255,.14)"/>
+                <line x1="97" y1="221" x2="263" y2="221" stroke="rgba(255,255,255,.14)"/>
+              </svg>
+              <div class="tooltip" id="tooltip">
+                <div class="tooltip-title">Home Run</div>
+                <div class="tooltip-desc">Turned on inner-half heater</div>
+                <div class="tooltip-grid">
+                  <div><div class="tooltip-title">Pitch</div><div>FF</div></div>
+                  <div><div class="tooltip-title">Velo</div><div>97.6 mph</div></div>
+                  <div><div class="tooltip-title">Count</div><div>2-1</div></div>
+                  <div><div class="tooltip-title">Zone</div><div>In Zone</div></div>
+                </div>
+                <div class="tooltip-chip">Demo Pitch View</div>
+              </div>
+            </div>
+            <div class="stack" style="gap:18px">
+              <div class="legend-grid" id="legend"></div>
+              <div class="break-grid" id="breakdown"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="section"><div class="section-head"><div><div class="section-title">Recent Form</div><div class="section-sub">Readable game-log snapshot</div></div></div><div class="section-body">
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Opp</th><th>Result</th><th>Line</th></tr></thead><tbody>
+          <tr><td>Apr 3</td><td>MIA</td><td><span class="pill impact">W 8-2</span></td><td>2-3, HR, 3 RBI, BB</td></tr>
+          <tr><td>Apr 1</td><td>SEA</td><td><span class="pill steady">W 5-3</span></td><td>0-4, 1 SO</td></tr>
+          <tr><td>Mar 31</td><td>SEA</td><td><span class="pill steady">W 5-0</span></td><td>0-4, 2 SO</td></tr>
+          <tr><td>Mar 30</td><td>SEA</td><td><span class="pill steady">L 1-2</span></td><td>1-3, BB, SO</td></tr>
+          <tr><td>Mar 28</td><td>SF</td><td><span class="pill impact">W 3-1</span></td><td>1-4, HR, RBI</td></tr>
+          <tr><td>Mar 27</td><td>SF</td><td><span class="pill impact">W 3-0</span></td><td>1-4, HR, 2 RBI</td></tr>
+        </tbody></table></div>
+      </div></section>
+
+      <section class="section"><div class="section-head"><div><div class="section-title">Splits</div><div class="section-sub">Fast-read context cards</div></div></div><div class="section-body"><div class="split-grid">
+        <div class="split-card"><div class="split-title">Vs RHP</div><div class="split-line">Demo Split</div><div class="split-detail">Left as demo until a reliable live split feed is wired in.</div></div>
+        <div class="split-card"><div class="split-title">Vs LHP</div><div class="split-line">Demo Split</div><div class="split-detail">Avoiding fabricated live split values.</div></div>
+        <div class="split-card"><div class="split-title">Home</div><div class="split-line">Apr 3 Burst</div><div class="split-detail">Most recent verified game: 2-for-3, HR, 3 RBI, BB vs Miami.</div></div>
+        <div class="split-card"><div class="split-title">Trend</div><div class="split-line">3 HR / 7 G</div><div class="split-detail">Verified current season home run pace.</div></div>
+      </div></div></section>
+    </div>
+  </div>
+  <div class="footer-space"></div>
+</div>
+
+<script>
+const styles={
+  in_play:{label:'Hit Into Play',fill:'#00e676',stroke:'#b7ffd8',shape:'diamond'},
+  home_run:{label:'Home Run',fill:'#ff3eb5',stroke:'#ffd0ef',shape:'star'},
+  swinging_strike:{label:'Swinging Strike',fill:'#ff4757',stroke:'#ffb3bc',shape:'circle'},
+  called_strike:{label:'Called Strike',fill:'#3b82f6',stroke:'#b8d4ff',shape:'square'},
+  foul:{label:'Foul',fill:'#ffd700',stroke:'#fff0a8',shape:'triangle'},
+  ball:{label:'Ball',fill:'transparent',stroke:'#7b879a',shape:'circle'},
+  take:{label:'Taken',fill:'#111827',stroke:'#9ca3af',shape:'square'},
+  chase_swing:{label:'Chase Swing',fill:'#ff6b35',stroke:'#ffd1bf',shape:'triangle'},
+  zone_swing:{label:'Zone Swing',fill:'#22c55e',stroke:'#d9ffe7',shape:'circle'}
+};
+const fallbackPitches=[
+  {id:1,x:-.12,y:2.46,result:'home_run',label:'Turned on inner-half heater',pitchType:'FF',velo:'97.6',count:'2-1'},
+  {id:2,x:1.14,y:2.18,result:'ball',label:'Spit on sweeper away',pitchType:'SL',velo:'86.2',count:'3-1'},
+  {id:3,x:.02,y:3.08,result:'foul',label:'Stayed on top rail fastball',pitchType:'FF',velo:'98.1',count:'0-1'},
+  {id:4,x:-.78,y:2.12,result:'in_play',label:'Lined double to left-center',pitchType:'SI',velo:'95.4',count:'1-0'},
+  {id:5,x:.98,y:1.62,result:'swinging_strike',label:'Whiffed at splitter below lane',pitchType:'FS',velo:'89.3',count:'1-2'},
+  {id:6,x:-.22,y:2.76,result:'called_strike',label:'Took edge fastball',pitchType:'FF',velo:'96.9',count:'0-0'},
+  {id:7,x:1.22,y:2.86,result:'take',label:'Tracked slider off plate',pitchType:'SL',velo:'85.9',count:'2-0'},
+  {id:8,x:.36,y:2.34,result:'zone_swing',label:'Late under high carry fastball',pitchType:'FF',velo:'97.8',count:'1-1'},
+  {id:9,x:-1.12,y:2.58,result:'chase_swing',label:'Reached for back-foot breaker',pitchType:'SL',velo:'84.8',count:'2-2'},
+  {id:10,x:.06,y:2.02,result:'in_play',label:'Rocket single through middle',pitchType:'CT',velo:'92.1',count:'0-1'},
+  {id:11,x:-.08,y:2.22,result:'home_run',label:'Tower shot to left field',pitchType:'SI',velo:'94.8',count:'3-2'},
+  {id:12,x:.62,y:3.34,result:'foul',label:'Fought off ladder fastball',pitchType:'FF',velo:'98.4',count:'0-2'}
+];
+const svg=document.getElementById('zone-svg');
+const tooltip=document.getElementById('tooltip');
+const legend=document.getElementById('legend');
+const breakdown=document.getElementById('breakdown');
+const filters=document.querySelectorAll('.filter');
+let pitches=fallbackPitches.slice();
+let lastFilter='all';
+let selectedPitchId=null;
+function inZone(p){return p.x>=-.83&&p.x<=.83&&p.y>=1.5&&p.y<=3.5}
+function swing(p){return ['swinging_strike','foul','in_play','chase_swing','zone_swing','home_run'].includes(p.result)}
+function take(p){return ['ball','called_strike','take'].includes(p.result)}
+function contact(p){return ['foul','in_play','zone_swing','chase_swing','home_run'].includes(p.result)}
+function toPoint(p){const x=((p.x+1.8)/3.6)*360;const y=420-(((p.y-.5)/4.1)*420);return{x,y}}
+function marker(style,p){
+  if(style.shape==='star')return `<g class="hr-pulse"><path d="M ${p.x} ${p.y-10} L ${p.x+3.2} ${p.y-3.2} L ${p.x+10.5} ${p.y-2.3} L ${p.x+5} ${p.y+2.6} L ${p.x+6.7} ${p.y+10} L ${p.x} ${p.y+6.2} L ${p.x-6.7} ${p.y+10} L ${p.x-5} ${p.y+2.6} L ${p.x-10.5} ${p.y-2.3} L ${p.x-3.2} ${p.y-3.2} Z" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2.2" style="filter:drop-shadow(0 0 8px rgba(255,62,181,.7)) drop-shadow(0 0 18px rgba(255,62,181,.45));"/></g>`;
+  if(style.shape==='square')return `<rect x="${p.x-7}" y="${p.y-7}" width="14" height="14" rx="4" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/>`;
+  if(style.shape==='triangle')return `<polygon points="${p.x},${p.y-9} ${p.x-8},${p.y+7} ${p.x+8},${p.y+7}" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/>`;
+  if(style.shape==='diamond')return `<polygon points="${p.x},${p.y-9} ${p.x-9},${p.y} ${p.x},${p.y+9} ${p.x+9},${p.y}" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/>`;
+  return `<circle cx="${p.x}" cy="${p.y}" r="7" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/>`;
+}
+function include(filter,p){
+  if(filter==='all')return true;
+  if(filter==='swings')return swing(p);
+  if(filter==='takes')return take(p);
+  if(filter==='inplay')return p.result==='in_play' || p.result==='home_run';
+  if(filter==='zone')return inZone(p);
+  if(filter==='outzone')return !inZone(p);
+}
+function updateTooltip(p){
+  const s=styles[p.result];
+  tooltip.innerHTML=`<div class="tooltip-top"><div><div class="tooltip-title">${s.label}</div><div class="tooltip-desc">${p.label}</div></div><button class="tooltip-close" type="button" aria-label="Close pitch details">X</button></div><div class="tooltip-grid"><div><div class="tooltip-title">Pitch</div><div>${p.pitchType}</div></div><div><div class="tooltip-title">Velo</div><div>${p.velo} mph</div></div><div><div class="tooltip-title">Count</div><div>${p.count}</div></div><div><div class="tooltip-title">Zone</div><div>${inZone(p)?'In Zone':'Out of Zone'}</div></div></div><div class="tooltip-chip">Demo Pitch View</div>`;
+  tooltip.classList.add('visible');
+  tooltip.classList.add('pinned');
+  const closeButton=tooltip.querySelector('.tooltip-close');
+  if(closeButton){
+    closeButton.addEventListener('click',(event)=>{
+      event.stopPropagation();
+      clearSelectedPitch();
+    });
+  }
+}
+function clearSelectedPitch(){
+  selectedPitchId=null;
+  tooltip.classList.remove('visible','pinned');
+}
+function render(filter='all'){
+  lastFilter=filter;
+  svg.querySelectorAll('.pitch').forEach(n=>n.remove());
+  const active=pitches.filter(p=>include(filter,p));
+  if(selectedPitchId!==null && !active.some((p)=>String(p.id)===String(selectedPitchId))){
+    clearSelectedPitch();
+  }
+  active.forEach(p=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','pitch');
+    g.innerHTML=marker(styles[p.result],toPoint(p));g.style.cursor='pointer';
+    g.addEventListener('click',()=>{
+      selectedPitchId=p.id;
+      updateTooltip(p);
+    });
+    svg.appendChild(g);
+  });
+  if(selectedPitchId!==null){
+    const selectedPitch=active.find((p)=>String(p.id)===String(selectedPitchId));
+    if(selectedPitch) updateTooltip(selectedPitch);
+  }
+}
+function renderBreakdown(){
+  breakdown.innerHTML='';
+  const zoneP=pitches.filter(inZone), outP=pitches.filter(p=>!inZone(p));
+  [
+    ['Swings In Zone', zoneP.filter(swing).length],
+    ['Swings Out of Zone', outP.filter(swing).length],
+    ['Takes In Zone', zoneP.filter(take).length],
+    ['Takes Out of Zone', outP.filter(take).length],
+    ['Chase Rate', outP.length ? `${Math.round((outP.filter(swing).length/outP.length)*100)}%` : '0%' ],
+    ['Zone Contact', zoneP.filter(swing).length ? `${Math.round((zoneP.filter(p=>swing(p)&&contact(p)).length/zoneP.filter(swing).length)*100)}%` : '0%'],
+    ['Whiffs', pitches.filter(p=>p.result==='swinging_strike').length],
+    ['Called Strikes', pitches.filter(p=>p.result==='called_strike').length],
+    ['Balls Taken', pitches.filter(p=>p.result==='ball').length],
+    ['Damage Events', pitches.filter(p=>p.result==='in_play' || p.result==='home_run').length]
+  ].forEach(([label,value])=>{
+    const item=document.createElement('div');item.className='break-item';item.innerHTML=`<div class="break-label">${label}</div><div class="break-value">${value}</div>`;breakdown.appendChild(item);
+  });
+}
+Object.entries(styles).forEach(([,s])=>{
+  const box=document.createElement('div');box.className='legend-item';
+  box.innerHTML=`<svg class="mark" viewBox="0 0 18 18">${marker(s,{x:9,y:9})}</svg><span>${s.label}</span>`;
+  legend.appendChild(box);
+});
+filters.forEach(btn=>btn.addEventListener('click',()=>{filters.forEach(b=>b.classList.remove('active'));btn.classList.add('active');render(btn.dataset.filter)}));
+render();
+renderBreakdown();
+</script>
+<script src="./player-live.js"></script>
+<script>
+  MoneyballrLive.hydratePlayerLabPage('judge');
+</script>
+</body>
+</html>
