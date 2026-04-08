@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoneyBallr Players — Full MLB Player Directory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #060912;
+    --surface: #0d1221;
+    --surface2: #111827;
+    --card: #0f1629;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --green: #00e676;
+    --green-dim: rgba(0,230,118,0.12);
+    --orange: #ff6b35;
+    --orange-dim: rgba(255,107,53,0.12);
+    --red: #ff4757;
+    --red-dim: rgba(255,71,87,0.12);
+    --gold: #ffd700;
+    --gold-dim: rgba(255,215,0,0.12);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-cond: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(0,230,118,0.08), transparent 30%),
+      radial-gradient(circle at top right, rgba(59,130,246,0.10), transparent 35%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  nav {
+    position: sticky; top: 0; left: 0; right: 0; z-index: 100;
+    height: 60px;
+    background: rgba(6,9,18,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 24px;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-decoration: none;
+    margin-right: auto;
+    position: relative;
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-logo::after {
+    content: '';
+    position: absolute; bottom: -4px; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, var(--green), transparent);
+  }
+  .nav-links { display: flex; gap: 4px; align-items: center; }
+  .nav-link {
+    font-family: var(--font-cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); border-color: var(--border2); }
+  .nav-link.active { color: var(--green); }
+  .shell { max-width: 1440px; margin: 0 auto; padding: 36px 48px 72px; }
+  .players-hero {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    background:
+      radial-gradient(circle at 78% 18%, rgba(59,130,246,0.12), transparent 24%),
+      linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(56px, 9vw, 104px);
+    line-height: 0.92;
+    letter-spacing: 3px;
+    margin-bottom: 14px;
+  }
+  .hero-title .accent { color: var(--green); }
+  .hero-copy {
+    max-width: 780px;
+    color: var(--text2);
+    font-family: var(--font-cond);
+    font-size: 18px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 26px;
+  }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-family: var(--font-cond);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    transition: transform 0.2s, border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .hero-btn.primary {
+    background: var(--green);
+    color: #000;
+    border: 1px solid var(--green);
+  }
+  .hero-btn.secondary {
+    background: rgba(255,255,255,0.03);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .hero-btn:hover { transform: translateY(-2px); }
+  .hero-btn.secondary:hover { color: var(--text); border-color: var(--green); }
+  .section-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 26px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    gap: 16px;
+  }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 6px;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 42px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .section-link {
+    font-family: var(--font-cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text2);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .section-link:hover { color: var(--green); border-color: var(--green); }
+  .data-updated-bar {
+    display: flex; align-items: center; gap: 20px;
+    padding: 8px 20px;
+    background: rgba(0,230,118,0.04);
+    border: 1px solid rgba(0,230,118,0.12);
+    border-radius: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .data-updated-item {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .data-updated-item .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+  }
+  .data-updated-item span { color: var(--green); }
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .player-card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+  .player-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    cursor: pointer;
+    height: 100%;
+  }
+  .player-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--green), #00bcd4, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .player-card:hover {
+    border-color: rgba(0,230,118,0.25);
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,230,118,0.08);
+  }
+  .player-card:hover::before { opacity: 1; }
+  .player-meta-strip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 24px;
+    background: rgba(255,255,255,0.015);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .meta-org,
+  .meta-status,
+  .meta-season {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .meta-org, .meta-season { color: var(--text3); }
+  .meta-status.debut { color: var(--orange); }
+  .meta-status.mlb { color: var(--green); }
+  .meta-status.star { color: #8bc4ff; }
+  .meta-sep { color: var(--text3); font-size: 10px; }
+  .meta-season { margin-left: auto; }
+  .player-card-header {
+    display: flex; align-items: flex-start; gap: 20px;
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+  }
+  .player-headshot-wrap { position: relative; flex-shrink: 0; }
+  .headshot-img,
+  .headshot-fallback {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,230,118,0.4);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), border-color 0.3s, box-shadow 0.3s;
+  }
+  .headshot-img { object-fit: cover; object-position: center top; }
+  .headshot-fallback {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+  .player-card:hover .headshot-img,
+  .player-card:hover .headshot-fallback {
+    transform: scale(1.07);
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.15), 0 4px 16px rgba(0,230,118,0.2);
+  }
+  .player-pos-badge {
+    position: absolute; bottom: -4px; right: -4px;
+    background: var(--green);
+    color: #000;
+    font-family: var(--font-cond);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .player-info { flex: 1; min-width: 0; }
+  .player-name {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .player-team {
+    font-family: var(--font-cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+  .player-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-family: var(--font-cond);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+  }
+  .tag-hot { background: rgba(255,107,53,0.15); color: var(--orange); border-color: rgba(255,107,53,0.3); }
+  .tag-trend { background: rgba(0,230,118,0.12); color: var(--green); border-color: rgba(0,230,118,0.3); }
+  .tag-top { background: rgba(255,215,0,0.1); color: var(--gold); border-color: rgba(255,215,0,0.25); }
+  .tag-org { background: rgba(255,255,255,0.06); color: var(--text2); border-color: var(--border2); }
+  .tag-debut { background: rgba(255,107,53,0.18); color: var(--orange); border-color: rgba(255,107,53,0.45); }
+  .tag-star { background: rgba(59,130,246,0.14); color: #8bc4ff; border-color: rgba(59,130,246,0.3); }
+  .player-card-stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-cell {
+    padding: 16px 12px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-key {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .stat-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 1px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .stat-val.good { color: var(--green); }
+  .stat-val.ok { color: var(--gold); }
+  .stat-val.bad { color: var(--red); }
+  .stat-val.star { color: #8bc4ff; }
+  .player-card-footer { padding: 18px 24px; }
+  .last10-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+  }
+  .card-copy {
+    color: var(--text2);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .live-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    border: 1px dashed var(--border2);
+    border-radius: 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: rgba(255,255,255,0.02);
+  }
+  .roster-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .roster-search {
+    flex: 1 1 340px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+  }
+  .roster-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+  }
+  .roster-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .roster-card {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: rgba(15,22,41,0.92);
+    padding: 18px;
+    display: grid;
+    gap: 16px;
+    min-height: 100%;
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  }
+  .roster-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,230,118,0.22);
+    box-shadow: 0 18px 44px rgba(0,0,0,0.35);
+  }
+  .roster-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .roster-player-info { min-width: 0; flex: 1; }
+  .roster-meta-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .roster-meta-item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+  }
+  .roster-meta-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .roster-meta-item strong {
+    font-family: var(--font-display);
+    font-size: 24px;
+    letter-spacing: 1px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .roster-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .roster-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-family: var(--font-cond);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    transition: transform 0.2s, border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .roster-action:hover { transform: translateY(-1px); }
+  .roster-action.primary {
+    background: var(--green);
+    color: #000;
+    border-color: var(--green);
+  }
+  .roster-action.secondary {
+    background: rgba(255,255,255,0.03);
+    color: var(--text2);
+  }
+  .roster-action.secondary:hover {
+    color: var(--text);
+    border-color: var(--green);
+  }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 30px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .footer-logo {
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--text3);
+  }
+  .footer-logo span { color: var(--green); }
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+  @media (max-width: 1024px) {
+    .shell { padding: 28px 24px 56px; }
+    .players-grid { grid-template-columns: 1fr; }
+    .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .players-hero { padding: 26px; }
+    .player-card-header { flex-direction: column; }
+    .player-card-stats { grid-template-columns: repeat(3, 1fr); }
+    .roster-grid,
+    .roster-meta-row { grid-template-columns: 1fr; }
+    footer { padding: 24px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="./moneyballr.html" class="nav-logo">Money<span>Ballr</span></a>
+  <div class="nav-links">
+    <a href="./moneyballr.html" class="nav-link">Home</a>
+    <a href="./players.html" class="nav-link active">Players</a>
+    <a href="./dashboard.html" class="nav-link">Dashboard</a>
+  </div>
+</nav>
+
+<div class="shell">
+  <section class="players-hero">
+    <div class="hero-eyebrow">2026 Season · Full Player Directory</div>
+    <h1 class="hero-title">MLB <span class="accent">Players</span></h1>
+    <p class="hero-copy">A proper players page for the full MoneyBallr browsing flow. Home stays focused on snapshots, while this page gives every featured player a place to live, including stars like Aaron Judge.</p>
+    <div class="hero-actions">
+      <a href="./moneyballr.html" class="hero-btn primary">Back To Home</a>
+      <a href="./player.html" class="hero-btn secondary">Open Dynamic Profile</a>
+      <a href="./dashboard.html" class="hero-btn secondary">Open Live Dashboard</a>
+      <a href="#player-directory" class="hero-btn secondary">Jump To Directory</a>
+    </div>
+  </section>
+
+  <section id="player-directory">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Featured Directory · Active Pages</div>
+        <h2 class="section-title">Player Directory</h2>
+      </div>
+      <a href="./moneyballr.html#prospects" class="section-link">View Home Snapshot →</a>
+    </div>
+
+    <div class="data-updated-bar">
+      <div class="data-updated-item"><span class="dot"></span> Updated: <span>April 3, 2026</span></div>
+      <div class="data-updated-item"><span class="dot"></span> Scope: <span>Featured pages + all active MLB rosters</span></div>
+      <div class="data-updated-item"><span class="dot"></span> Includes: <span>Konnor Griffin, Sal Stewart, Aaron Judge, and every active roster player</span></div>
+    </div>
+
+    <div class="players-grid" id="players-grid">
+      <a class="player-card-link" href="./konnor-griffin.html">
+        <article class="player-card">
+          <div class="player-meta-strip">
+            <span class="meta-org">Pittsburgh Pirates</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-status debut">MLB Debut Today</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-org">Top Prospect</span>
+            <span class="meta-season">2026 Season</span>
+          </div>
+          <div class="player-card-header">
+            <div class="player-headshot-wrap">
+              <img src="https://a.espncdn.com/combiner/i?img=/i/headshots/mlb/players/full/5218285.png&w=350&h=254" alt="Konnor Griffin" class="headshot-img">
+              <div class="player-pos-badge">SS</div>
+            </div>
+            <div class="player-info">
+              <div class="player-name">Konnor Griffin</div>
+              <div class="player-team">Pittsburgh Pirates · MLB Active Roster</div>
+              <div class="player-tags">
+                <span class="tag tag-debut">MLB Debut</span>
+                <span class="tag tag-hot">Live</span>
+                <span class="tag tag-org">PIT</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Age</div>
+              <div style="font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1;">19</div>
+            </div>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-cell"><div class="stat-key">AVG</div><div class="stat-val good">.000</div></div>
+            <div class="stat-cell"><div class="stat-key">OBP</div><div class="stat-val good">.000</div></div>
+            <div class="stat-cell"><div class="stat-key">SLG</div><div class="stat-val good">.000</div></div>
+            <div class="stat-cell"><div class="stat-key">OPS</div><div class="stat-val good">.000</div></div>
+            <div class="stat-cell"><div class="stat-key">HR</div><div class="stat-val bad">0</div></div>
+          </div>
+          <div class="player-card-footer">
+            <div class="last10-label">Page Status</div>
+            <p class="card-copy">Pre-debut premium shell with a clean empty-state strike zone, zeroed MLB stat modules, and a launch-ready profile for his first official major-league data.</p>
+          </div>
+        </article>
+      </a>
+
+      <a class="player-card-link" href="./sal-stewart.html">
+        <article class="player-card">
+          <div class="player-meta-strip">
+            <span class="meta-org">Cincinnati Reds</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-status mlb">Active MLB Roster</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-org">Starting 3B</span>
+            <span class="meta-season">2026 Season</span>
+          </div>
+          <div class="player-card-header">
+            <div class="player-headshot-wrap">
+              <img src="https://a.espncdn.com/combiner/i?img=/i/headshots/mlb/players/full/5080771.png&w=350&h=254" alt="Sal Stewart" class="headshot-img">
+              <div class="player-pos-badge" style="background:var(--orange);color:#000;">3B</div>
+            </div>
+            <div class="player-info">
+              <div class="player-name">Sal Stewart</div>
+              <div class="player-team">Cincinnati Reds · MLB Active Roster</div>
+              <div class="player-tags">
+                <span class="tag tag-hot">Hot Start</span>
+                <span class="tag tag-trend">MLB Starter</span>
+                <span class="tag tag-org">CIN</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Age</div>
+              <div style="font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1;">22</div>
+            </div>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-cell"><div class="stat-key">AVG</div><div class="stat-val good">.474</div></div>
+            <div class="stat-cell"><div class="stat-key">OBP</div><div class="stat-val good">.615</div></div>
+            <div class="stat-cell"><div class="stat-key">SLG</div><div class="stat-val good">.947</div></div>
+            <div class="stat-cell"><div class="stat-key">OPS</div><div class="stat-val good">1.563</div></div>
+            <div class="stat-cell"><div class="stat-key">HR</div><div class="stat-val good">2</div></div>
+          </div>
+          <div class="player-card-footer">
+            <div class="last10-label">Page Status</div>
+            <p class="card-copy">Full player-lab page with overview, advanced batting, interactive strike-zone treatment, recent form, and splits built in the DataBallr style.</p>
+          </div>
+        </article>
+      </a>
+
+      <a class="player-card-link" href="./aaron-judge.html">
+        <article class="player-card">
+          <div class="player-meta-strip">
+            <span class="meta-org">New York Yankees</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-status star">MLB Superstar</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-org">Right Field</span>
+            <span class="meta-season">2026 Season</span>
+          </div>
+          <div class="player-card-header">
+            <div class="player-headshot-wrap">
+              <img src="https://a.espncdn.com/combiner/i?img=/i/headshots/mlb/players/full/33192.png&w=350&h=254" alt="Aaron Judge" class="headshot-img">
+              <div class="player-pos-badge" style="background:#8bc4ff;color:#07101f;">RF</div>
+            </div>
+            <div class="player-info">
+              <div class="player-name">Aaron Judge</div>
+              <div class="player-team">New York Yankees · MLB Active Roster</div>
+              <div class="player-tags">
+                <span class="tag tag-star">Star Profile</span>
+                <span class="tag tag-top">Power</span>
+                <span class="tag tag-org">NYY</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Age</div>
+              <div style="font-family:var(--font-display);font-size:22px;color:var(--text);line-height:1;">33</div>
+            </div>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-cell"><div class="stat-key">AVG</div><div class="stat-val bad">.185</div></div>
+            <div class="stat-cell"><div class="stat-key">OPS</div><div class="stat-val ok">.785</div></div>
+            <div class="stat-cell"><div class="stat-key">HR</div><div class="stat-val star">3</div></div>
+            <div class="stat-cell"><div class="stat-key">RBI</div><div class="stat-val ok">6</div></div>
+            <div class="stat-cell"><div class="stat-key">SO</div><div class="stat-val bad">12</div></div>
+          </div>
+          <div class="player-card-footer">
+            <div class="last10-label">Page Status</div>
+            <p class="card-copy">Star-level player lab translated into the same design system, with verified current-season totals, a Judge-specific strike-zone view, recent form, and context cards.</p>
+          </div>
+        </article>
+      </a>
+    </div>
+  </section>
+
+  <section id="all-players-directory" style="margin-top:44px;">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Live MLB Rosters · Auto-Loaded</div>
+        <h2 class="section-title">All Active Players</h2>
+      </div>
+      <a href="./dashboard.html" class="section-link">Open Dashboard Search →</a>
+    </div>
+
+    <div class="roster-toolbar">
+      <label class="roster-search" for="all-players-search">
+        <span class="section-label" style="margin:0;color:var(--text3);">Filter</span>
+        <input id="all-players-search" type="text" placeholder="Search by player, team, or position" autocomplete="off">
+      </label>
+      <div class="roster-count" id="all-players-count">Loading active rosters…</div>
+    </div>
+
+    <div class="roster-grid" id="all-players-grid">
+      <div class="live-state" style="grid-column:1/-1;">Loading all active MLB rosters…</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="footer-logo">Money<span>Ballr</span></div>
+  <div class="footer-copy">© 2026 MoneyBallr Analytics · Featured player pages plus a live all-MLB active roster directory</div>
+</footer>
+<script src="./player-live.js"></script>
+<script>
+  MoneyballrLive.renderPlayersPage('players-grid', ['griffin', 'stewart', 'judge']);
+  MoneyballrLive.renderActiveRosterDirectory('all-players-grid', 'all-players-search', 'all-players-count');
+</script>
+</body>
+</html>
