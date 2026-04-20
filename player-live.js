@@ -5,7 +5,7 @@
     griffin: {
       key: 'griffin',
       id: 804606,
-      slug: './konnor-griffin.html',
+      slug: './#/player/804606',
       statusLabel: 'MLB Debut Today',
       statusClass: 'debut',
       metaDetail: 'Top Prospect',
@@ -23,7 +23,7 @@
     stewart: {
       key: 'stewart',
       id: 701398,
-      slug: './sal-stewart.html',
+      slug: './#/player/701398',
       statusLabel: 'Active MLB Roster',
       statusClass: 'mlb',
       metaDetail: 'Starting 3B',
@@ -41,7 +41,7 @@
     judge: {
       key: 'judge',
       id: 592450,
-      slug: './aaron-judge.html',
+      slug: './#/player/592450',
       statusLabel: 'MLB Superstar',
       statusClass: 'star',
       metaDetail: 'Right Field',
@@ -62,6 +62,10 @@
     acc[player.id] = player;
     return acc;
   }, {});
+
+  function profileHref(playerId) {
+    return `./#/player/${playerId}`;
+  }
 
   let teamsCachePromise = null;
   let rosterDirectoryPromise = null;
@@ -284,7 +288,7 @@
 
   function renderRosterCard(player) {
     const initials = fallbackInitials(player.name);
-    const detailHref = `./player.html?player=${player.id}`;
+    const detailHref = profileHref(player.id);
     const secondaryAction = player.featuredSlug
       ? `<a class="roster-action secondary" href="${player.featuredSlug}">Featured Page</a>`
       : `<a class="roster-action secondary" href="./dashboard.html?player=${player.id}">Dashboard</a>`;
@@ -312,7 +316,7 @@
           <div class="roster-meta-item"><span class="roster-meta-label">Type</span><strong>${player.position || '--'}</strong></div>
         </div>
         <div class="roster-actions">
-          <a class="roster-action primary" href="${detailHref}">Open Profile</a>
+          <a class="roster-action primary" href="${detailHref}" data-player-profile="${player.id}">Open Profile</a>
           ${secondaryAction}
         </div>
       </article>`;
@@ -463,6 +467,7 @@
   window.MoneyballrLive = {
     CURRENT_SEASON,
     PLAYER_CONFIG,
+    profileHref,
     fetchPlayer,
     fetchRosterDirectory,
     renderPlayersPage,
@@ -470,4 +475,13 @@
     hydrateHomeCards,
     hydratePlayerLabPage,
   };
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-player-profile]');
+    if (!trigger) return;
+    event.preventDefault();
+    const playerId = Number(trigger.dataset.playerProfile);
+    if (!Number.isFinite(playerId)) return;
+    window.location.assign(profileHref(playerId));
+  });
 })();

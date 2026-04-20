@@ -91,6 +91,190 @@ function formatDate(dateString) {
   return new Date(`${dateString}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+const LEAGUE_BASELINES = {
+  hitter: {
+    obp: 0.315,
+    ops: 0.715,
+    xwOBA: 0.320,
+    wOBA: 0.315,
+    bbRate: 8.5,
+    kRate: 22.0,
+    hardHit: 38.0,
+  },
+  pitcher: {
+    era: 4.10,
+    kBb: 2.6,
+    whiffPct: 24.0,
+    xERA: 4.05,
+    opponentOps: 0.710,
+    opponentKRate: 22.0,
+  },
+};
+
+function toFiniteNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const normalized = typeof value === 'string' ? value.replace(/%/g, '').trim() : value;
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function firstFinite(...values) {
+  return values.find((value) => Number.isFinite(value)) ?? null;
+}
+
+function blendWithBaseline(actual, baseline, reliability) {
+  if (!Number.isFinite(actual)) return baseline;
+  return baseline + ((actual - baseline) * Math.max(reliability, 0.12));
+}
+
+function availabilityScore(values) {
+  const total = values.length || 1;
+  const present = values.filter((value) => Number.isFinite(value)).length;
+  return present / total;
+}
+
+function buildSampleProfile(isPitcher, season, logs) {
+  const sampleSize = isPitcher
+    ? parseIpToOuts(season.inningsPitched || '0.0') / 3
+    : toFiniteNumber(season.plateAppearances);
+  const thresholds = isPitcher ? { partial: 20, full: 80 } : { partial: 50, full: 300 };
+  let tier = 'projection';
+  if (Number.isFinite(sampleSize) && sampleSize >= thresholds.full) tier = 'full_sample';
+  else if (Number.isFinite(sampleSize) && sampleSize >= thresholds.partial) tier = 'partial_sample';
+
+  let reliability = 0.08;
+  if (tier === 'full_sample') {
+    reliability = 1;
+  } else if (tier === 'partial_sample') {
+    reliability = 0.35 + (((sampleSize - thresholds.partial) / (thresholds.full - thresholds.partial)) * 0.5);
+  } else if (Number.isFinite(sampleSize) && sampleSize > 0) {
+    reliability = 0.10 + ((sampleSize / thresholds.partial) * 0.20);
+  }
+
+  return {
+    tier,
+    reliability: clamp(reliability, 0.08, 1),
+    confidenceLevel: tier === 'full_sample' ? 'HIGH' : tier === 'partial_sample' ? 'MEDIUM' : 'LOW',
+    badgeLabel: tier === 'full_sample' ? 'Stable MLB Data' : tier === 'partial_sample' ? 'Limited Data' : 'Projected',
+    reason: tier === 'full_sample'
+      ? 'Qualified MLB sample with stable major-league data.'
+      : tier === 'partial_sample'
+        ? 'Partial MLB sample is blended with league baseline to reduce noise.'
+        : 'No meaningful MLB sample yet, so the model falls back to projection logic.',
+    note: tier === 'full_sample'
+      ? 'Advanced metrics carry full weight.'
+      : tier === 'partial_sample'
+        ? 'Current production is blended with recent form and league averages.'
+        : 'Projection mode uses baseline expectations until MLB data stabilizes.',
+    mode: tier === 'projection' ? 'Projection-based' : tier === 'partial_sample' ? 'Blended' : 'Observed',
+    sampleLabel: isPitcher ? `${formatNumber(sampleSize, 1)} IP` : `${formatNumber(sampleSize, 0)} PA`,
+    weights: isPitcher
+      ? (tier === 'full_sample'
+        ? { recent: 0.22, advanced: 0.38, discipline: 0.18, matchup: 0.10, baseline: 0.12 }
+        : tier === 'partial_sample'
+          ? { recent: 0.20, advanced: 0.20, discipline: 0.24, matchup: 0.10, baseline: 0.26 }
+          : { recent: 0.06, advanced: 0.08, discipline: 0.22, matchup: 0.12, baseline: 0.52 })
+      : (tier === 'full_sample'
+        ? { recent: 0.20, advanced: 0.38, discipline: 0.18, matchup: 0.10, baseline: 0.14 }
+        : tier === 'partial_sample'
+          ? { recent: 0.20, advanced: 0.20, discipline: 0.25, matchup: 0.10, baseline: 0.25 }
+          : { recent: 0.06, advanced: 0.08, discipline: 0.20, matchup: 0.10, baseline: 0.56 }),
+  };
+}
+
+function buildAdaptiveEvaluation(playerType, context, sampleProfile) {
+  const isPitcher = playerType === 'Pitcher';
+  const baseline = isPitcher ? LEAGUE_BASELINES.pitcher : LEAGUE_BASELINES.hitter;
+  const recent = isPitcher
+    ? weightedScore([
+      { weight: 0.40, score: scale(blendWithBaseline(context.recent.kBb, baseline.kBb, sampleProfile.reliability), 1.5, 6.5) },
+      { weight: 0.35, score: scale(blendWithBaseline(context.recent.era, baseline.era, sampleProfile.reliability), 2.3, 5.6, true) },
+      { weight: 0.25, score: scale(blendWithBaseline(context.recent.pitchesPerOut, 4.4, sampleProfile.reliability), 3.2, 5.5, true) },
+    ])
+    : weightedScore([
+      { weight: 0.45, score: scale(blendWithBaseline(context.recent.obp, baseline.obp, sampleProfile.reliability), 0.270, 0.450) },
+      { weight: 0.30, score: scale(blendWithBaseline(context.recent.ops, baseline.ops, sampleProfile.reliability), 0.600, 1.150) },
+      { weight: 0.25, score: scale(blendWithBaseline(context.recent.kRate, baseline.kRate, sampleProfile.reliability), 10, 34, true) },
+    ]);
+  const advanced = isPitcher
+    ? weightedScore([
+      { weight: 0.45, score: scale(blendWithBaseline(context.season.kBb, baseline.kBb, sampleProfile.reliability), 1.5, 6.5) },
+      { weight: 0.30, score: scale(blendWithBaseline(context.whiffPct, baseline.whiffPct, sampleProfile.reliability), 18, 38) },
+      { weight: 0.25, score: scale(blendWithBaseline(firstFinite(context.savant.xERA, context.season.era), baseline.xERA, sampleProfile.reliability), 2.3, 5.6, true) },
+    ])
+    : weightedScore([
+      { weight: 0.40, score: scale(blendWithBaseline(context.savant.xwOBA, baseline.xwOBA, sampleProfile.reliability), 0.280, 0.430) },
+      { weight: 0.35, score: scale(blendWithBaseline(context.savant.wOBA, baseline.wOBA, sampleProfile.reliability), 0.280, 0.430) },
+      { weight: 0.25, score: scale(blendWithBaseline(context.savant.hardHit, baseline.hardHit, sampleProfile.reliability), 28, 55) },
+    ]);
+  const discipline = isPitcher
+    ? weightedScore([
+      { weight: 0.55, score: scale(blendWithBaseline(context.season.kBb, baseline.kBb, sampleProfile.reliability), 1.5, 6.5) },
+      { weight: 0.45, score: scale(blendWithBaseline(context.whiffPct, baseline.whiffPct, sampleProfile.reliability), 18, 38) },
+    ])
+    : weightedScore([
+      { weight: 0.40, score: scale(blendWithBaseline(context.season.obp, baseline.obp, sampleProfile.reliability), 0.280, 0.430) },
+      { weight: 0.30, score: scale(blendWithBaseline(context.season.bbRate, baseline.bbRate, sampleProfile.reliability), 4, 16) },
+      { weight: 0.30, score: scale(blendWithBaseline(context.season.kRate, baseline.kRate, sampleProfile.reliability), 10, 34, true) },
+    ]);
+  const matchup = isPitcher
+    ? weightedScore([
+      { weight: 0.50, score: scale(blendWithBaseline(context.opponent.kRate, baseline.opponentKRate, sampleProfile.reliability), 17, 29) },
+      { weight: 0.50, score: scale(blendWithBaseline(context.opponent.ops, baseline.opponentOps, sampleProfile.reliability), 0.620, 0.820, true) },
+    ])
+    : weightedScore([
+      { weight: 0.55, score: scale(blendWithBaseline(context.opponent.obpAllowed, baseline.obp, sampleProfile.reliability), 0.280, 0.360, true) },
+      { weight: 0.45, score: scale(blendWithBaseline(context.opponent.kRateAllowed, 22, sampleProfile.reliability), 30, 17, true) },
+    ]);
+  const baselineScore = isPitcher
+    ? weightedScore([
+      { weight: 0.50, score: scale(blendWithBaseline(context.season.era, baseline.era, sampleProfile.reliability), 2.3, 5.6, true) },
+      { weight: 0.30, score: scale(sampleProfile.reliability, 0, 1) },
+      { weight: 0.20, score: scale(blendWithBaseline(firstFinite(context.savant.xERA, context.season.era), baseline.xERA, sampleProfile.reliability), 2.3, 5.6, true) },
+    ])
+    : weightedScore([
+      { weight: 0.40, score: scale(blendWithBaseline(context.season.obp, baseline.obp, sampleProfile.reliability), 0.280, 0.430) },
+      { weight: 0.40, score: scale(blendWithBaseline(context.season.ops, baseline.ops, sampleProfile.reliability), 0.600, 1.050) },
+      { weight: 0.20, score: scale(sampleProfile.reliability, 0, 1) },
+    ]);
+
+  const score = weightedScore([
+    { weight: sampleProfile.weights.recent, score: recent },
+    { weight: sampleProfile.weights.advanced, score: advanced },
+    { weight: sampleProfile.weights.discipline, score: discipline },
+    { weight: sampleProfile.weights.matchup, score: matchup },
+    { weight: sampleProfile.weights.baseline, score: baselineScore },
+  ]);
+  const availability = isPitcher
+    ? availabilityScore([context.recent.kBb, context.recent.era, context.season.kBb, context.season.era, context.whiffPct, toFiniteNumber(context.savant.xERA)])
+    : availabilityScore([context.recent.obp, context.recent.ops, context.season.obp, context.season.ops, context.savant.xwOBA, context.savant.wOBA, context.savant.hardHit]);
+  const overallScore = Math.round(clamp(score ?? 50));
+  const comparisonScore = Math.round(clamp(50 + ((overallScore - 50) * (0.30 + (sampleProfile.reliability * 0.70)))));
+  return {
+    score: overallScore,
+    comparisonScore,
+    confidence_score: overallScore,
+    dataConfidence: sampleProfile.confidenceLevel,
+    trend: comparisonScore >= 67 ? 'HOT' : comparisonScore <= 45 ? 'COLD' : 'NEUTRAL',
+    tier: sampleProfile.tier,
+    reason: sampleProfile.reason,
+    note: sampleProfile.note,
+    mode: sampleProfile.mode,
+    sample: sampleProfile,
+    confidenceValue: Math.round(clamp((35 + (sampleProfile.reliability * 45) + (availability * 20)))),
+    insight: sampleProfile.tier === 'full_sample'
+      ? 'Stable MLB data is carrying the full model weight.'
+      : sampleProfile.tier === 'partial_sample'
+        ? 'Limited MLB data is blended with baseline context to avoid misleading small-sample spikes.'
+        : 'Projection mode is active, so the score is intentionally regressed toward league average.',
+    comparisonNote: sampleProfile.tier === 'full_sample'
+      ? 'Comparison uses full observed MLB production.'
+      : sampleProfile.tier === 'partial_sample'
+        ? 'Comparison is normalized to reduce small-sample volatility.'
+        : 'Comparison is projection-based and conservative until MLB data arrives.',
+  };
+}
+
 function headshotUrl(id) {
   return `https://img.mlbstatic.com/mlb-photos/image/upload/w_240,q_auto:best/v1/people/${id}/headshot/67/current`;
 }
@@ -237,7 +421,18 @@ function pitcherRollingPoints(logs) {
 }
 
 function summarizeRecentHitter(logs) {
-  const sample = logs.slice(0, 7);
+  const sample = logs.length < 5 ? logs.slice(0, logs.length) : logs.slice(0, 7);
+  if (!sample.length) {
+    return {
+      obp: null,
+      ops: null,
+      kRate: null,
+      obpStdDev: null,
+      opsStdDev: null,
+      samplePA: 0,
+      summary: 'No MLB game logs available.',
+    };
+  }
   const totals = sample.reduce((acc, log) => {
     const stat = log.stat || {};
     acc.ab += Number(stat.atBats || 0);
@@ -264,12 +459,23 @@ function summarizeRecentHitter(logs) {
     obpStdDev: stddev(totals.obpValues),
     opsStdDev: stddev(totals.opsValues),
     samplePA: totals.pa,
-    summary: `${totals.h}-${totals.ab}, ${totals.bb} BB, ${totals.k} K in last ${sample.length} games`,
+    summary: `${totals.h}-${totals.ab}, ${totals.bb} BB, ${totals.k} K across ${sample.length} available MLB games`,
   };
 }
 
 function summarizeRecentPitcher(logs) {
-  const sample = logs.slice(0, 5);
+  const sample = logs.length < 5 ? logs.slice(0, logs.length) : logs.slice(0, 5);
+  if (!sample.length) {
+    return {
+      kBb: null,
+      pitchesPerOut: null,
+      era: null,
+      eraStdDev: null,
+      whipStdDev: null,
+      sampleInnings: 0,
+      summary: 'No MLB game logs available.',
+    };
+  }
   const totals = sample.reduce((acc, log) => {
     const stat = log.stat || {};
     acc.outs += parseIpToOuts(stat.inningsPitched || '0.0');
@@ -289,7 +495,7 @@ function summarizeRecentPitcher(logs) {
     eraStdDev: stddev(totals.eraValues),
     whipStdDev: stddev(totals.whipValues),
     sampleInnings: innings,
-    summary: `${formatNumber(innings, 1)} IP, ${totals.k} K, ${totals.bb} BB in last ${sample.length} starts`,
+    summary: `${formatNumber(innings, 1)} IP, ${totals.k} K, ${totals.bb} BB across ${sample.length} available MLB starts`,
   };
 }
 
@@ -299,83 +505,6 @@ function parseIpToOuts(ipString) {
   return Number(whole) * 3 + Number(partial);
 }
 
-function buildConfidence(playerType, context) {
-  if (playerType === 'Pitcher') {
-    const recent = weightedScore([
-      { weight: 0.4, score: scale(context.recent.kBb, 1.5, 7.5) },
-      { weight: 0.35, score: scale(context.whiffPct, 18, 40) },
-      { weight: 0.25, score: scale(context.recent.pitchesPerOut, 3.2, 6.5, true) },
-    ]);
-    const advanced = weightedScore([
-      { weight: 0.45, score: scale(context.season.kBb, 1.5, 7.5) },
-      { weight: 0.30, score: scale(context.whiffPct, 18, 40) },
-      { weight: 0.25, score: scale(Number(context.savant['xERA'] || context.season.era), 2.3, 5.5, true) },
-    ]);
-    const matchup = weightedScore([
-      { weight: 0.5, score: scale(context.opponent.kRate, 17, 29) },
-      { weight: 0.5, score: scale(Number(context.opponent.ops), 0.620, 0.820, true) },
-    ]);
-    const consistency = weightedScore([
-      { weight: 0.6, score: scale(context.recent.eraStdDev, 0.1, 2.2, true) },
-      { weight: 0.4, score: scale(context.recent.whipStdDev, 0.05, 0.9, true) },
-    ]);
-    const variance = weightedScore([
-      { weight: 0.5, score: scale(context.recent.sampleInnings, 8, 35) },
-      { weight: 0.5, score: scale(context.recent.eraStdDev, 0.1, 2.2, true) },
-    ]);
-    const score = weightedScore([
-      { weight: 0.30, score: recent },
-      { weight: 0.25, score: advanced },
-      { weight: 0.20, score: matchup },
-      { weight: 0.15, score: consistency },
-      { weight: 0.10, score: variance },
-    ]);
-    const rounded = Math.round(clamp(score ?? 50));
-    return {
-      player: context.name,
-      confidence_score: rounded,
-      trend: rounded >= 67 ? 'HOT' : rounded <= 45 ? 'COLD' : 'NEUTRAL',
-      insight: `Confidence leans on ${formatNumber(context.season.kBb, 2)} K/BB, ${formatRate(context.whiffPct)} whiff, and ${context.opponent.name ? `${context.opponent.name} matchup context` : 'repeatable run-prevention signals'}. The model favors stable strike-throwing and efficient outs over win-loss noise.`,
-    };
-  }
-
-  const recent = weightedScore([
-    { weight: 0.45, score: scale(context.recent.obp, 0.270, 0.450) },
-    { weight: 0.30, score: scale(context.recent.ops, 0.600, 1.150) },
-    { weight: 0.25, score: scale(context.recent.kRate, 10, 34, true) },
-  ]);
-  const advanced = weightedScore([
-    { weight: 0.40, score: scale(Number(context.savant.xwOBA), 0.280, 0.430) },
-    { weight: 0.35, score: scale(Math.abs(Number(context.savant.wOBA) - Number(context.savant.xwOBA)), 0.00, 0.08, true) },
-    { weight: 0.25, score: scale(Number(context.season.obp), 0.280, 0.430) },
-  ]);
-  const matchup = weightedScore([
-    { weight: 0.55, score: scale(Number(context.opponent.obpAllowed), 0.280, 0.360) },
-    { weight: 0.45, score: scale(context.opponent.kRateAllowed, 30, 17, true) },
-  ]);
-  const consistency = weightedScore([
-    { weight: 0.60, score: scale(context.recent.obpStdDev, 0.01, 0.16, true) },
-    { weight: 0.40, score: scale(context.recent.opsStdDev, 0.05, 0.55, true) },
-  ]);
-  const variance = weightedScore([
-    { weight: 0.50, score: scale(context.recent.samplePA, 18, 60) },
-    { weight: 0.50, score: scale(context.recent.kRate, 10, 34, true) },
-  ]);
-  const score = weightedScore([
-    { weight: 0.30, score: recent },
-    { weight: 0.25, score: advanced },
-    { weight: 0.20, score: matchup },
-    { weight: 0.15, score: consistency },
-    { weight: 0.10, score: variance },
-  ]);
-  const rounded = Math.round(clamp(score ?? 50));
-  return {
-    player: context.name,
-    confidence_score: rounded,
-    trend: rounded >= 67 ? 'HOT' : rounded <= 45 ? 'COLD' : 'NEUTRAL',
-    insight: `Confidence is built on OBP repeatability, strikeout control, and expected production. ${context.savant.xwOBA ? `xwOBA (${context.savant.xwOBA}) versus actual quality keeps regression risk visible.` : 'Underlying expected data is limited, so repeatable on-base skill carries more weight.'}`,
-  };
-}
 
 async function buildPlayerDashboard(id) {
   if (cache.players.has(id)) return cache.players.get(id);
@@ -395,30 +524,42 @@ async function buildPlayerDashboard(id) {
     const opponent = matchupInfo ? await fetchTeamSeasonStats(matchupInfo.opponentId, isPitcher ? 'hitting' : 'pitching') : {};
     const zonePitches = await fetchZonePitches(person, logs);
     const recent = isPitcher ? summarizeRecentPitcher(logs) : summarizeRecentHitter(logs);
+    const sampleProfile = buildSampleProfile(isPitcher, season, logs);
 
     const context = isPitcher ? {
       name: person.fullName,
       season: {
-        era: Number(season.era || 0),
-        kBb: Number(season.strikeoutWalkRatio || advanced.strikesoutsToWalks || 0),
+        era: toFiniteNumber(season.era),
+        kBb: firstFinite(toFiniteNumber(season.strikeoutWalkRatio), toFiniteNumber(advanced.strikesoutsToWalks)),
       },
       recent,
-      whiffPct: Number(advanced.whiffPercentage || 0) * 100,
-      savant,
+      whiffPct: toFiniteNumber(advanced.whiffPercentage) !== null ? toFiniteNumber(advanced.whiffPercentage) * 100 : null,
+      savant: {
+        xERA: toFiniteNumber(savant.xERA),
+      },
       opponent: {
         name: matchupInfo?.opponentName || '',
-        kRate: Number(opponent.strikeOuts || 0) && Number(opponent.plateAppearances || 0) ? (Number(opponent.strikeOuts) / Number(opponent.plateAppearances)) * 100 : null,
-        ops: Number(opponent.ops || 0),
+        kRate: toFiniteNumber(opponent.strikeOuts) && toFiniteNumber(opponent.plateAppearances) ? (toFiniteNumber(opponent.strikeOuts) / toFiniteNumber(opponent.plateAppearances)) * 100 : null,
+        ops: toFiniteNumber(opponent.ops),
       },
     } : {
       name: person.fullName,
-      season: { obp: Number(season.obp || 0) },
+      season: {
+        obp: toFiniteNumber(season.obp),
+        ops: toFiniteNumber(season.ops),
+        bbRate: toFiniteNumber(season.baseOnBalls) && toFiniteNumber(season.plateAppearances) ? (toFiniteNumber(season.baseOnBalls) / toFiniteNumber(season.plateAppearances)) * 100 : null,
+        kRate: toFiniteNumber(season.strikeOuts) && toFiniteNumber(season.plateAppearances) ? (toFiniteNumber(season.strikeOuts) / toFiniteNumber(season.plateAppearances)) * 100 : null,
+      },
       recent,
-      savant,
+      savant: {
+        xwOBA: toFiniteNumber(savant.xwOBA),
+        wOBA: toFiniteNumber(savant.wOBA),
+        hardHit: toFiniteNumber(savant['Hard Hit%']),
+      },
       opponent: {
         name: matchupInfo?.opponentName || '',
-        obpAllowed: Number(opponent.obp || 0),
-        kRateAllowed: Number(opponent.strikeoutsPer9Inn || 0),
+        obpAllowed: toFiniteNumber(opponent.obp),
+        kRateAllowed: toFiniteNumber(opponent.strikeoutsPer9Inn),
       },
     };
 
@@ -432,7 +573,8 @@ async function buildPlayerDashboard(id) {
       savant,
       zonePitches,
       recent,
-      confidence: buildConfidence(person.primaryPosition?.type, context),
+      sampleProfile,
+      confidence: buildAdaptiveEvaluation(person.primaryPosition?.type, context, sampleProfile),
       matchupInfo,
       opponent,
     };
@@ -526,6 +668,22 @@ function renderZoneChart(pitches) {
       <line x1="97" y1="212" x2="263" y2="212" stroke="rgba(255,255,255,.14)"></line>
       ${points}
     </svg>`;
+}
+
+function displayDashboardValue(value, player, missingLabel = '--') {
+  if (value === null || value === undefined || value === '') {
+    if (player?.sampleProfile?.tier === 'projection') return 'Projected';
+    if (player?.sampleProfile?.tier === 'partial_sample') return missingLabel;
+    return '--';
+  }
+  return value;
+}
+
+function buildComparisonSummary(players) {
+  const sorted = [...players].sort((a, b) => b.confidence.comparisonScore - a.confidence.comparisonScore);
+  const leader = sorted[0];
+  const trailer = sorted[sorted.length - 1];
+  return `${leader.person.fullName} leads this normalized comparison at ${leader.confidence.comparisonScore}. ${trailer.person.fullName} is being regressed more heavily because ${trailer.confidence.reason.toLowerCase()}`;
 }
 
 function renderOverviewTab(data) {
@@ -664,20 +822,21 @@ function renderPlayerPage(data) {
           <span>•</span>
           <span>Age ${data.person.currentAge || '--'}</span>
         </div>
+        <div class="search-sub" style="margin-top:12px;">${data.sampleProfile.badgeLabel} · ${data.confidence.dataConfidence} confidence · ${data.sampleProfile.sampleLabel}</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
           <a class="small-btn" href="./player.html?player=${data.id}" style="display:inline-flex;align-items:center;justify-content:center;">Full Profile</a>
           <a class="small-btn" href="./players.html" style="display:inline-flex;align-items:center;justify-content:center;">Directory</a>
         </div>
       </div>
       <div class="score-block">
-        <div class="score-pill ${trendClass[data.confidence.trend]}">${data.confidence.confidence_score}</div>
-        <div class="search-sub ${trendClass[data.confidence.trend]}" style="margin-top:8px;">${data.confidence.trend}</div>
+        <div class="score-pill ${trendClass[data.confidence.trend]}">${data.confidence.score}</div>
+        <div class="search-sub ${trendClass[data.confidence.trend]}" style="margin-top:8px;">${data.confidence.dataConfidence} confidence</div>
         <div class="score-insight">${data.confidence.insight}</div>
       </div>
     </div>
 
     <div class="stat-card-grid">
-      ${statCards.map(([label, value]) => `<div class="stat-card"><div class="stat-key">${label}</div><div class="stat-value">${value ?? '--'}</div></div>`).join('')}
+      ${statCards.map(([label, value]) => `<div class="stat-card"><div class="stat-key">${label}</div><div class="stat-value">${displayDashboardValue(value, data)}</div></div>`).join('')}
     </div>
 
     <div class="player-tabs">
@@ -727,29 +886,34 @@ async function renderCompare() {
   els.compareRoot.className = 'content-panel compare-root';
   els.compareRoot.innerHTML = '<div class="loading-state">Building player comparison…</div>';
   const players = await Promise.all(state.compareIds.map((id) => buildPlayerDashboard(id)));
+  const comparisonSummary = buildComparisonSummary(players);
   els.compareRoot.innerHTML = `
     <div>
       <div class="side-label">Compare</div>
       <div class="compare-title">Player Comparison</div>
+      <div class="search-sub" style="margin-top:10px;">${comparisonSummary}</div>
     </div>
     <div class="compare-grid">
       ${players.map((player) => `
         <div class="compare-player-card">
           <div class="compare-title">${player.person.fullName}</div>
           <div class="search-sub" style="margin-top:8px;">${player.person.currentTeam?.name || 'MLB'} · ${player.person.primaryPosition?.abbreviation || ''}</div>
-          <div class="score-pill ${trendClass[player.confidence.trend]}" style="margin-top:14px; display:inline-flex;">${player.confidence.confidence_score}</div>
+          <div class="search-sub" style="margin-top:8px;">${player.sampleProfile.badgeLabel} · ${player.confidence.dataConfidence} confidence</div>
+          <div class="score-pill ${trendClass[player.confidence.trend]}" style="margin-top:14px; display:inline-flex;">${player.confidence.comparisonScore}</div>
           <div class="compare-stats">
             ${player.isPitcher ? `
-              <div class="compare-stat-row"><span>ERA</span><strong>${player.season.era || '--'}</strong></div>
-              <div class="compare-stat-row"><span>WHIP</span><strong>${player.season.whip || '--'}</strong></div>
-              <div class="compare-stat-row"><span>K/9</span><strong>${player.season.strikeoutsPer9Inn || player.advanced.strikeoutsPer9 || '--'}</strong></div>
-              <div class="compare-stat-row"><span>xERA</span><strong>${player.savant.xERA || '--'}</strong></div>` : `
-              <div class="compare-stat-row"><span>AVG</span><strong>${player.season.avg || '--'}</strong></div>
-              <div class="compare-stat-row"><span>OBP</span><strong>${player.season.obp || '--'}</strong></div>
-              <div class="compare-stat-row"><span>OPS</span><strong>${player.season.ops || '--'}</strong></div>
-              <div class="compare-stat-row"><span>xwOBA</span><strong>${player.savant.xwOBA || '--'}</strong></div>`}
-              <div class="compare-stat-row"><span>Trend</span><strong>${player.confidence.trend}</strong></div>
+              <div class="compare-stat-row"><span>ERA</span><strong>${displayDashboardValue(player.season.era, player)}</strong></div>
+              <div class="compare-stat-row"><span>WHIP</span><strong>${displayDashboardValue(player.season.whip, player)}</strong></div>
+              <div class="compare-stat-row"><span>K/9</span><strong>${displayDashboardValue(player.season.strikeoutsPer9Inn || player.advanced.strikeoutsPer9, player)}</strong></div>
+              <div class="compare-stat-row"><span>xERA</span><strong>${displayDashboardValue(player.savant.xERA, player)}</strong></div>` : `
+              <div class="compare-stat-row"><span>AVG</span><strong>${displayDashboardValue(player.season.avg, player)}</strong></div>
+              <div class="compare-stat-row"><span>OBP</span><strong>${displayDashboardValue(player.season.obp, player)}</strong></div>
+              <div class="compare-stat-row"><span>OPS</span><strong>${displayDashboardValue(player.season.ops, player)}</strong></div>
+              <div class="compare-stat-row"><span>xwOBA</span><strong>${displayDashboardValue(player.savant.xwOBA, player)}</strong></div>`}
+              <div class="compare-stat-row"><span>Tier</span><strong>${player.sampleProfile.tier.replace('_', ' ')}</strong></div>
+              <div class="compare-stat-row"><span>Mode</span><strong>${player.confidence.mode}</strong></div>
           </div>
+          <div class="search-sub" style="margin-top:12px;">${player.confidence.comparisonNote}</div>
         </div>`).join('')}
     </div>`;
 }
@@ -766,7 +930,7 @@ async function loadTopPlayersToday() {
       const player = await buildPlayerDashboard(candidate.player.id);
       return player;
     }));
-    scored.sort((a, b) => b.confidence.confidence_score - a.confidence.confidence_score);
+    scored.sort((a, b) => b.confidence.comparisonScore - a.confidence.comparisonScore);
     els.topPlayers.innerHTML = `<div class="today-list">${scored.slice(0, 6).map((player) => `
       <div class="today-item">
         <div class="today-item-top">
@@ -774,9 +938,9 @@ async function loadTopPlayersToday() {
             <div class="today-name">${player.person.fullName}</div>
             <div class="search-sub">${player.person.currentTeam?.name || 'MLB'} · ${player.matchupInfo?.opponentName || 'No matchup'}</div>
           </div>
-          <div class="score-pill ${trendClass[player.confidence.trend]}">${player.confidence.confidence_score}</div>
+          <div class="score-pill ${trendClass[player.confidence.trend]}">${player.confidence.comparisonScore}</div>
         </div>
-        <div class="search-sub ${trendClass[player.confidence.trend]}">${player.confidence.trend}</div>
+        <div class="search-sub ${trendClass[player.confidence.trend]}">${player.confidence.dataConfidence} confidence</div>
         <div class="today-insight">${player.confidence.insight}</div>
         <button class="small-btn" data-open-player="${player.id}">Open Player</button>
       </div>`).join('')}</div>`;

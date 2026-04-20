@@ -1,46 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MoneyBallr Player Profile</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./player-profile.css">
+  <meta charset="UTF-8">
+  <title>Redirecting...</title>
 </head>
 <body>
-  <div class="profile-shell">
-    <header class="profile-topbar">
-      <a href="./moneyballr.html" class="profile-logo">Money<span>Ballr</span></a>
-      <nav class="profile-nav">
-        <a href="./moneyballr.html">Home</a>
-        <a href="./players.html">Players</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./player.html" class="active">Dynamic Profile</a>
-      </nav>
-    </header>
-
-    <section class="profile-hero">
-      <div class="profile-hero-copy">
-        <div class="profile-eyebrow">Dynamic Profile Engine</div>
-        <h1>Every MLB player gets a live profile automatically.</h1>
-        <p>This page is generated from MoneyBallr’s live player data pipeline, matchup logic, and confidence engine. No hand-built profiles required.</p>
-      </div>
-      <div class="profile-search-panel">
-        <label class="panel-label" for="player-profile-search">Open Another Player</label>
-        <div class="profile-search-box">
-          <input id="player-profile-search" type="text" autocomplete="off" placeholder="Search any MLB player">
-          <button id="clear-player-search" type="button">Clear</button>
-        </div>
-        <div id="player-profile-search-results" class="profile-search-results" hidden></div>
-      </div>
-    </section>
-
-    <main id="player-profile-root" class="profile-root loading-state">
-      Loading live player profile…
-    </main>
-  </div>
-
-  <script type="module" src="./player-profile.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const playerId = params.get('player') || '592450';
+    window.location.replace(`./#/player/${playerId}`);
+  </script>
 </body>
 </html>

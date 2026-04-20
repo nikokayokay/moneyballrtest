@@ -1,56 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yoshinobu Yamamoto — MoneyBallr Pitching Status</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#060912;--surface:#0d1221;--surface2:#111827;--card:#0f1629;--border:rgba(255,255,255,.08);
-  --text:#e8eaf0;--text2:#93a4be;--text3:#64748b;--green:#00e676;--blue:#3b82f6;--gold:#ffd700;--red:#ff4757;
-  --display:'Bebas Neue',sans-serif;--cond:'Barlow Condensed',sans-serif;--body:'Barlow',sans-serif;--mono:'JetBrains Mono',monospace;
-}
-body{background:radial-gradient(circle at top,#102445 0%,#08111f 40%,#060912 100%);color:var(--text);font-family:var(--body);line-height:1.55}
-a{text-decoration:none;color:inherit}
-.shell{max-width:1480px;margin:0 auto;padding:28px}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
-.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.back{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04);font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text2)}
-.eyebrow{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
-.live-state{display:flex;align-items:center;justify-content:center;min-height:240px;border:1px dashed rgba(255,255,255,.14);border-radius:24px;background:rgba(255,255,255,.02);font:500 11px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}
-.pitcher-hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:32px;padding:36px;background:radial-gradient(circle at 82% 20%, rgba(59,130,246,.18), transparent 28%),linear-gradient(135deg,#10192f 0%,#08101f 55%,#050914 100%);box-shadow:0 25px 80px rgba(0,0,0,.45)}
-.hero-main{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start}
-.badges{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.badge{padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text2)}.badge.accent{background:var(--blue);border-color:transparent;color:#07101f}
-.hero-name{font-family:var(--display);font-size:72px;letter-spacing:.08em;line-height:.92}.hero-meta{margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;font:600 15px var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}.hero-copy{margin-top:16px;max-width:760px;color:var(--text2);font-size:15px;line-height:1.8}
-.hero-quick-grid,.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.quick-card,.stat-card{border:1px solid var(--border);border-radius:22px;background:rgba(255,255,255,.04);padding:16px}.quick-label,.stat-name,.mini-label,.control-label{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3)}.quick-value,.stat-value{margin-top:10px;font-family:var(--display);font-size:36px;letter-spacing:.08em;line-height:1;color:var(--text)}
-.content-grid{margin-top:26px;display:grid;grid-template-columns:1.35fr .95fr;gap:22px}.stack{display:flex;flex-direction:column;gap:22px}.section{border:1px solid var(--border);border-radius:26px;background:rgba(13,18,33,.95);overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.28)}.section-head{padding:22px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.section-title{font-family:var(--display);font-size:30px;letter-spacing:.08em}.section-sub{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3);margin-top:4px}.section-body{padding:22px 24px}
-.outings-control-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.outing-select{border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:10px 14px;font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase}
-.chart-layout{display:grid;grid-template-columns:1.2fr .9fr;gap:18px}.zone-card{position:relative;border:1px solid var(--border);border-radius:24px;padding:16px;background:#07101f;overflow:hidden}.zone-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.05),transparent 65%);pointer-events:none}.pitch-zone-svg{width:100%;height:420px;display:block;position:relative}.pitch-tooltip{margin-top:12px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--border);border-radius:18px;background:rgba(15,23,39,.96);padding:14px;color:var(--text2);font-size:13px;min-height:74px}.pitch-tooltip strong{color:var(--text);font-size:14px}
-.chart-side{display:flex;flex-direction:column;gap:18px}.legend-grid{display:flex;flex-wrap:wrap;gap:10px}.legend-item{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--text2)}.legend-swatch,.pitch-swatch{width:10px;height:10px;border-radius:999px;display:inline-block}
-#pitch-mix-cards{display:grid;gap:12px}.pitch-card{border:1px solid var(--border);border-radius:20px;padding:16px;background:rgba(255,255,255,.03)}.pitch-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.pitch-name-wrap{display:flex;align-items:center;gap:10px}.pitch-name{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.pitch-usage{font-family:var(--display);font-size:26px;letter-spacing:.08em}.pitch-usage-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin:12px 0 14px}.pitch-usage-bar span{display:block;height:100%;border-radius:999px}.pitch-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.mini-value{display:block;margin-top:6px;font-family:var(--display);font-size:24px;letter-spacing:.08em;color:var(--text)}
-.table-wrap{overflow:hidden;border:1px solid var(--border);border-radius:22px}table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.02)}th,td{padding:14px 16px;text-align:left}th{font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--text3);background:rgba(255,255,255,.03)}td{border-top:1px solid var(--border);font-size:13px}.analysis-copy{font-size:15px;color:var(--text2);line-height:1.9}
-@media (max-width:1100px){.hero-main,.content-grid,.chart-layout{grid-template-columns:1fr}.hero-quick-grid,.stat-grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:760px){.shell{padding:18px}.pitcher-hero{padding:24px}.hero-name{font-size:52px}.hero-quick-grid,.stat-grid{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}}
-</style>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=./#/player/808967">
+  <title>Redirecting...</title>
 </head>
 <body>
-<div class="shell">
-  <div class="topbar">
-    <div class="topbar-actions">
-      <a class="back" href="./moneyballr.html#pitching-status">← Back To Pitching Status</a>
-      <a class="back" href="./dashboard.html?player=808967">Open In Dashboard</a>
-    </div>
-    <div class="eyebrow">MoneyBallr Pitching Lab</div>
-  </div>
-
-  <div id="pitcher-page-root" class="live-state">Loading live pitcher profile…</div>
-</div>
-<script src="./pitcher-live.js"></script>
-<script>
-  MoneyballrPitching.hydratePitcherPage('pitcher-page-root', 'yamamoto');
-</script>
+  <script>window.location.replace('./#/player/808967');</script>
 </body>
 </html>

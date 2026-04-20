@@ -11,7 +11,7 @@
       name: 'Yoshinobu Yamamoto',
       teamName: 'Los Angeles Dodgers',
       teamAbbr: 'LAD',
-      link: './yoshinobu-yamamoto.html',
+      link: './#/player/808967',
       accent: '#1d4ed8',
       savantSlug: 'yoshinobu-yamamoto-808967',
       hand: 'RHP',

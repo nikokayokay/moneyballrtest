@@ -1,78 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MoneyBallr Dashboard — Live MLB Analytics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./dashboard.css">
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=./#/dashboard">
+  <title>Redirecting...</title>
 </head>
 <body>
-  <div class="dash-shell">
-    <header class="dash-topbar">
-      <a href="./moneyballr.html" class="dash-logo">Money<span>Ballr</span></a>
-      <nav class="dash-nav">
-        <a href="./moneyballr.html">Home</a>
-        <a href="./players.html">Players</a>
-        <a href="./player.html">Dynamic Profile</a>
-        <a href="./dashboard.html" class="active">Dashboard</a>
-      </nav>
-    </header>
-
-    <section class="dash-hero">
-      <div class="dash-hero-copy">
-        <div class="dash-eyebrow">Live MLB Player Lab</div>
-        <h1>Search, compare, and evaluate MLB players in one live dashboard.</h1>
-        <p>Built for fast player discovery, low-variance confidence scoring, and live stat exploration without leaving MoneyBallr.</p>
-      </div>
-      <div class="dash-search-panel">
-        <label class="panel-label" for="player-search">Player Search</label>
-        <div class="search-box">
-          <input id="player-search" type="text" autocomplete="off" placeholder="Search any MLB player" />
-          <button id="clear-search" type="button">Clear</button>
-        </div>
-        <div id="search-results" class="search-results" hidden></div>
-        <div class="hero-actions">
-          <button id="load-aaron-judge" class="hero-btn primary" type="button">Open Aaron Judge</button>
-          <button id="load-yamamoto" class="hero-btn secondary" type="button">Open Yamamoto</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="dash-main-grid">
-      <aside class="dash-sidebar">
-        <section class="side-card">
-          <div class="side-head">
-            <div>
-              <div class="side-label">Today</div>
-              <h2>Top Players Today</h2>
-            </div>
-          </div>
-          <div id="top-players-today" class="side-body loading-state">Loading confidence board…</div>
-        </section>
-
-        <section class="side-card compare-card">
-          <div class="side-head">
-            <div>
-              <div class="side-label">Compare</div>
-              <h2>Player Compare</h2>
-            </div>
-          </div>
-          <div id="compare-tray" class="side-body compare-tray empty">Add players from search to compare.</div>
-          <button id="run-compare" class="hero-btn secondary full-width" type="button">Compare Selected Players</button>
-        </section>
-      </aside>
-
-      <main class="dash-content">
-        <section id="player-page-root" class="content-panel loading-state">
-          Search for a player to load the live dashboard.
-        </section>
-        <section id="compare-root" class="content-panel compare-root" hidden></section>
-      </main>
-    </section>
-  </div>
-
-  <script type="module" src="./dashboard.js"></script>
+  <script>window.location.replace('./#/dashboard');</script>
 </body>
 </html>
