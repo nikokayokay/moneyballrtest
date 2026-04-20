@@ -3,6 +3,16 @@
 :root {
   color-scheme: dark;
   --page-gutter: clamp(1rem, 2vw, 2rem);
+  --mb-bg: #050914;
+  --mb-surface-1: #080d16;
+  --mb-surface-2: #0b121d;
+  --mb-surface-3: #101827;
+  --mb-border: rgba(255,255,255,0.08);
+  --mb-border-strong: rgba(103,232,249,0.18);
+  --mb-live: #67e8f9;
+  --mb-positive: #34d399;
+  --mb-negative: #fb7185;
+  --mb-warning: #facc15;
 }
 
 html {
@@ -12,10 +22,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top left, rgba(0, 230, 118, 0.12), transparent 26%),
-    radial-gradient(circle at top right, rgba(83, 166, 255, 0.10), transparent 32%),
-    linear-gradient(180deg, #07101d 0%, #060912 38%, #04070f 100%);
+  background: #050914;
   font-size: clamp(0.95rem, 0.35vw + 0.9rem, 1.02rem);
 }
 
@@ -51,9 +58,7 @@ input {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(0, 230, 118, 0.12), transparent 24%),
-    radial-gradient(circle at 84% 22%, rgba(83, 166, 255, 0.12), transparent 24%);
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.08), transparent 48%);
   pointer-events: none;
 }
 
@@ -67,7 +72,7 @@ input {
   background-size: 42px 42px;
   mask-image: linear-gradient(to bottom, rgba(255,255,255,0.55), transparent 78%);
   pointer-events: none;
-  opacity: 0.18;
+  opacity: 0.08;
 }
 
 .panel-glow > * {
@@ -76,9 +81,7 @@ input {
 }
 
 .stat-shine {
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
-    rgba(255,255,255,0.03);
+  background: #0b121d;
 }
 
 .headline-shadow {
@@ -99,4 +102,71 @@ input {
 
 .animate-pitch-in {
   animation: pitch-in 220ms ease-out both;
+}
+
+.player-headshot {
+  object-fit: cover;
+  object-position: 50% 46%;
+}
+
+.player-headshot-sphere {
+  object-fit: cover;
+  object-position: 50% 48%;
+}
+
+.mb-shell {
+  width: min(96rem, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 2vw, 2rem);
+}
+
+.mb-section {
+  margin-top: clamp(0.75rem, 1.4vw, 1.25rem);
+}
+
+.surface-primary {
+  background: var(--mb-surface-1);
+  border: 1px solid var(--mb-border);
+}
+
+.surface-secondary {
+  background: var(--mb-surface-2);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.surface-strip {
+  background: rgba(8, 13, 22, 0.82);
+  border-block: 1px solid var(--mb-border);
+}
+
+.mb-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+.mb-title {
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.055em;
+  line-height: 0.9;
+}
+
+.mb-meta {
+  font-family: "Barlow Condensed", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.weighted-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(0.75rem, 1.2vw, 1.25rem);
+}
+
+@media (min-width: 1024px) {
+  .weighted-grid {
+    grid-template-columns: minmax(0, 1.618fr) minmax(18rem, 1fr);
+  }
 }

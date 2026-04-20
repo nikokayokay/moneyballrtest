@@ -26,6 +26,8 @@ export type SourceStatus = {
   live: string;
 };
 
+export type LiveStateTag = "LIVE" | "FINAL" | "UPCOMING" | "NO_GAME";
+
 export type GameLogEntry = {
   date: string;
   opponent: string;
@@ -133,10 +135,14 @@ export type PlayerProfile = {
   recentGames: GameLogEntry[];
   allGames: GameLogEntry[];
   liveGame: {
+    state: LiveStateTag;
     status: string;
     opponent: string;
     line: Array<[string, string]>;
     note: string;
+    inning: string | null;
+    isToday: boolean;
+    updatedAt: string;
   };
   pitchMix: Array<{
     pitchType: string;
@@ -209,6 +215,23 @@ const WOBA_WEIGHTS = {
   triple: 1.578,
   homeRun: 2.031,
 };
+
+function currentMlbDate(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+function classifyGameState(status?: string | null): LiveStateTag {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized.includes("in progress") || normalized.includes("warmup") || normalized.includes("delayed")) return "LIVE";
+  if (normalized.includes("final") || normalized.includes("completed")) return "FINAL";
+  if (normalized.includes("scheduled") || normalized.includes("pre-game") || normalized.includes("preview")) return "UPCOMING";
+  return "NO_GAME";
+}
 
 function headshotUrl(playerId: number) {
   return `https://img.mlbstatic.com/mlb-photos/image/upload/w_320,q_auto:best/v1/people/${playerId}/headshot/67/current`;
@@ -396,7 +419,7 @@ async function fetchWindow(playerId: number, group: "hitting" | "pitching", days
 
 async function fetchTodayGame(teamId: number | null, bust = false) {
   if (!teamId) return null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = currentMlbDate();
   const data = await fetchJson<{ dates?: Array<{ games?: Array<any> }> }>(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}`, bust);
   const games = data.dates?.[0]?.games || [];
   return games.find((game) => game.teams?.home?.team?.id === teamId || game.teams?.away?.team?.id === teamId) || null;
@@ -412,7 +435,7 @@ function buildValidation(person: MlbPerson, seasonMeta: { player?: { id?: number
 }
 
 function buildGameLogs(type: "hitter" | "pitcher", logs: Array<any>): GameLogEntry[] {
-  return logs.map((log) => {
+  return [...logs].sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).map((log) => {
     const stat = log.stat || {};
     return {
       date: log.date || "",
@@ -764,9 +787,11 @@ export async function fetchPlayerProfile(playerId: number, bust = false): Promis
   const comparisonScore = Math.round(clamp(50 + ((rawScore - 50) * (0.30 + (sample.reliability * 0.70)))));
   const trend = score >= 67 ? "HOT" : score <= 45 ? "COLD" : "NEUTRAL";
 
-  const recentGames = buildGameLogs(type, logs.slice(0, Math.min(8, logs.length)));
-  const allGames = buildGameLogs(type, logs);
+  const sortedLogs = [...logs].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const recentGames = buildGameLogs(type, sortedLogs.slice(0, Math.min(10, sortedLogs.length)));
+  const allGames = buildGameLogs(type, sortedLogs);
   const feed = game?.gamePk ? await fetchJson<any>(`https://statsapi.mlb.com/api/v1.1/game/${game.gamePk}/feed/live`, bust).catch(() => null) : null;
+  const liveState = classifyGameState(feed?.gameData?.status?.detailedState || game?.status?.detailedState || null);
   const pitchContext = await fetchRecentPitchContext(person.id, type, logs, bust).catch(() => ({
     trend: logs.slice(0, 10).map((log: any) => ({
       label: safeDateLabel(log.date),
@@ -787,6 +812,9 @@ export async function fetchPlayerProfile(playerId: number, bust = false): Promis
   const liveLine = type === "pitcher"
     ? [["IP", fmt(statBlock.inningsPitched)], ["ER", fmt(statBlock.earnedRuns)], ["K", fmt(statBlock.strikeOuts)], ["BB", fmt(statBlock.baseOnBalls)]]
     : [["AB", fmt(statBlock.atBats)], ["H", fmt(statBlock.hits)], ["R", fmt(statBlock.runs)], ["RBI", fmt(statBlock.rbi)]];
+  const inning = feed?.liveData?.linescore?.currentInningOrdinal && feed?.liveData?.linescore?.inningHalf
+    ? `${feed.liveData.linescore.inningHalf} ${feed.liveData.linescore.currentInningOrdinal}`
+    : null;
 
   const standardStats: Array<[string, string]> = type === "pitcher"
     ? [
@@ -892,10 +920,14 @@ export async function fetchPlayerProfile(playerId: number, bust = false): Promis
     recentGames,
     allGames,
     liveGame: {
+      state: liveState,
       status: feed?.gameData?.status?.detailedState || game?.status?.detailedState || "No game scheduled today",
       opponent: game ? ((game.teams?.home?.team?.id === person.currentTeam?.id) ? game.teams?.away?.team?.name : game.teams?.home?.team?.name) : "Unavailable",
       line: liveLine.map(([label, value]) => [label, value]),
-      note: game ? "Refreshes automatically while the game is active." : "Live game data will appear automatically when this player is on today's schedule.",
+      note: liveState === "LIVE" ? "Live stat line refreshes every 10-15 seconds." : liveState === "FINAL" ? "Final line from today's completed game." : liveState === "UPCOMING" ? "Upcoming today. Live line appears when the game starts." : "No game today. Rolling history remains active.",
+      inning,
+      isToday: Boolean(game),
+      updatedAt: new Date().toISOString(),
     },
     pitchMix: type === "pitcher" ? await fetchPitchMix(playerId, logs, bust) : [],
     fetchedAt: new Date().toISOString(),
@@ -911,7 +943,8 @@ function singles(season: Record<string, unknown>) {
 }
 
 function recentHitterSummary(logs: Array<any>): { summary: string; ops: number | null } {
-  const sample = logs.length < 5 ? logs.slice(0) : logs.slice(0, 7);
+  const sortedLogs = [...logs].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const sample = sortedLogs.length < 5 ? sortedLogs.slice(0) : sortedLogs.slice(0, 7);
   if (!sample.length) return { summary: "No MLB game logs available.", ops: null };
   const totals = sample.reduce((acc, log) => {
     const stat = log.stat || {};
@@ -932,7 +965,8 @@ function recentHitterSummary(logs: Array<any>): { summary: string; ops: number |
 }
 
 function recentPitcherSummary(logs: Array<any>): { summary: string; era: number | null } {
-  const sample = logs.length < 5 ? logs.slice(0) : logs.slice(0, 5);
+  const sortedLogs = [...logs].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const sample = sortedLogs.length < 5 ? sortedLogs.slice(0) : sortedLogs.slice(0, 5);
   if (!sample.length) return { summary: "No MLB game logs available.", era: null };
   const totals = sample.reduce((acc, log) => {
     const stat = log.stat || {};

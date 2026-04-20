@@ -7,7 +7,7 @@ type StrikeZoneChartProps = {
   isLoading?: boolean;
 };
 
-type WindowFilter = "10" | "25" | "season";
+type WindowFilter = "10" | "25" | "100" | "season";
 type HandFilter = "all" | "L" | "R";
 type PlotMode = "all" | "swings" | "takes" | "damage";
 type OverlayMode = "dots" | "contact_heat" | "damage_heat" | "sequence";
@@ -22,16 +22,6 @@ const RESULT_STYLES: Record<Pitch["result"], { label: string; color: string }> =
   home_run: { label: "Home Run", color: "#ef4444" },
 };
 
-function starPoints(cx: number, cy: number, outer: number, inner: number) {
-  const points: string[] = [];
-  for (let index = 0; index < 10; index += 1) {
-    const angle = ((Math.PI / 5) * index) - (Math.PI / 2);
-    const radius = index % 2 === 0 ? outer : inner;
-    points.push(`${cx + (Math.cos(angle) * radius)},${cy + (Math.sin(angle) * radius)}`);
-  }
-  return points.join(" ");
-}
-
 function isSwing(pitch: Pitch) {
   return pitch.result === "swinging_strike" || pitch.result === "foul" || pitch.result === "in_play" || pitch.result === "hit" || pitch.result === "home_run";
 }
@@ -40,17 +30,24 @@ function isDamage(pitch: Pitch) {
   return pitch.result === "hit" || pitch.result === "home_run" || pitch.result === "in_play";
 }
 
-function PitchGlyph({ pitch, cx, cy, active }: { pitch: Pitch; cx: number; cy: number; active: boolean }) {
+function PitchGlyph({ pitch, cx, cy, active, muted }: { pitch: Pitch; cx: number; cy: number; active: boolean; muted: boolean }) {
   const style = RESULT_STYLES[pitch.result];
-  const className = `transition-transform duration-200 ${active ? "scale-[1.25]" : "hover:scale-[1.12]"} animate-pitch-in`;
+  const opacity = active ? 1 : muted ? 0.34 : 0.74;
+  const strokeWidth = active ? 1.8 : 1.05;
 
   if (pitch.result === "home_run") {
-    return <polygon points={starPoints(cx, cy, 4.8, 2.2)} fill={style.color} className={className} />;
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={active ? 5.8 : 4.8} fill="none" stroke={style.color} strokeOpacity={active ? 0.78 : muted ? 0.22 : 0.45} strokeWidth={strokeWidth} />
+        <circle cx={cx} cy={cy} r={active ? 3.1 : 2.35} fill={style.color} fillOpacity={opacity} />
+      </g>
+    );
   }
   if (pitch.result === "hit") {
-    return <rect x={cx - 4} y={cy - 4} width={8} height={8} transform={`rotate(45 ${cx} ${cy})`} rx={1.2} fill={style.color} className={className} />;
+    const size = active ? 6.8 : 5.4;
+    return <rect x={cx - (size / 2)} y={cy - (size / 2)} width={size} height={size} transform={`rotate(45 ${cx} ${cy})`} rx={1} fill={style.color} fillOpacity={opacity} />;
   }
-  return <circle cx={cx} cy={cy} r={3.8} fill={style.color} className={className} />;
+  return <circle cx={cx} cy={cy} r={active ? 3.35 : 2.35} fill={style.color} fillOpacity={opacity} />;
 }
 
 function PitchSkeleton() {
@@ -72,10 +69,10 @@ function heatColor(mode: OverlayMode, intensity: number) {
 }
 
 export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartProps) {
-  const [windowFilter, setWindowFilter] = useState<WindowFilter>("season");
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>("100");
   const [handFilter, setHandFilter] = useState<HandFilter>("all");
   const [plotMode, setPlotMode] = useState<PlotMode>("all");
-  const [overlayMode, setOverlayMode] = useState<OverlayMode>("dots");
+  const [overlayMode, setOverlayMode] = useState<OverlayMode>("contact_heat");
   const [selectedPitchTypes, setSelectedPitchTypes] = useState<string[]>([]);
   const [selectedResults, setSelectedResults] = useState<Pitch["result"][]>([]);
   const [hoveredPitch, setHoveredPitch] = useState<Pitch | null>(null);
@@ -89,7 +86,7 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
 
   const visibleWindow = useMemo(() => {
     if (windowFilter === "season") return pitches;
-    const count = windowFilter === "10" ? 10 : 25;
+    const count = windowFilter === "10" ? 10 : windowFilter === "25" ? 25 : 100;
     return pitches.slice(-count);
   }, [pitches, windowFilter]);
 
@@ -115,6 +112,7 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
     .filter((item) => item.count > 0 || !filteredPitches.length), [filteredPitches]);
 
   const activePitch = lockedPitch || hoveredPitch;
+  const isPinned = Boolean(lockedPitch);
 
   const chartPoints = useMemo(() => filteredPitches.map((pitch, index) => {
     const px = 12 + ((pitch.x + 1) / 2) * 76;
@@ -172,33 +170,33 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
   if (!pitches.length) {
     return (
       <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm leading-7 text-slate-400">
-        No Baseball Savant pitch tracking is available for this hitter yet this season.
+        Not enough pitch tracking data for this hitter yet this season.
       </div>
     );
   }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-      <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+      <div className="border border-white/8 bg-[#0b121d] p-3 sm:p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Pitch Tracking</div>
             <div className="mt-2 text-[clamp(1rem,1.2vw,1.35rem)] font-semibold text-white">Season strike zone map</div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.16em] text-slate-400">
+          <div className="flex items-center gap-2 border border-white/8 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.16em] text-slate-400">
             <Filter className="h-3.5 w-3.5" />
             {filteredPitches.length} visible pitches
           </div>
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
-          {(["10", "25", "season"] as WindowFilter[]).map((value) => (
-            <button key={value} type="button" onClick={() => setWindowFilter(value)} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${windowFilter === value ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-300" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+          {(["100", "25", "10", "season"] as WindowFilter[]).map((value) => (
+            <button key={value} type="button" onClick={() => setWindowFilter(value)} className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition ${windowFilter === value ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-300" : "border-white/8 bg-[#101827] text-slate-400 hover:text-slate-100"}`}>
               {value === "season" ? "Season" : `Last ${value}`}
             </button>
           ))}
           {(["all", "L", "R"] as HandFilter[]).map((value) => (
-            <button key={value} type="button" onClick={() => setHandFilter(value)} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${handFilter === value ? "border-sky-400/35 bg-sky-400/10 text-sky-300" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+            <button key={value} type="button" onClick={() => setHandFilter(value)} className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition ${handFilter === value ? "border-sky-400/35 bg-sky-400/10 text-sky-300" : "border-white/8 bg-[#101827] text-slate-400 hover:text-slate-100"}`}>
               {value === "all" ? "All arms" : `vs ${value}HP`}
             </button>
           ))}
@@ -206,19 +204,19 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
 
         <div className="mb-4 flex flex-wrap gap-2">
           {(["all", "swings", "takes", "damage"] as PlotMode[]).map((value) => (
-            <button key={value} type="button" onClick={() => setPlotMode(value)} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${plotMode === value ? "border-white/20 bg-white/10 text-white" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+            <button key={value} type="button" onClick={() => setPlotMode(value)} className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition ${plotMode === value ? "border-white/20 bg-white/10 text-white" : "border-white/8 bg-[#101827] text-slate-400 hover:text-slate-100"}`}>
               {value === "all" ? "All pitches" : value}
             </button>
           ))}
           {(["dots", "contact_heat", "damage_heat", "sequence"] as OverlayMode[]).map((value) => (
-            <button key={value} type="button" onClick={() => setOverlayMode(value)} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${overlayMode === value ? "border-amber-300/35 bg-amber-300/10 text-amber-200" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+            <button key={value} type="button" onClick={() => setOverlayMode(value)} className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition ${overlayMode === value ? "border-amber-300/35 bg-amber-300/10 text-amber-200" : "border-white/8 bg-[#101827] text-slate-400 hover:text-slate-100"}`}>
               <Layers3 className="mr-2 inline h-3.5 w-3.5" />
               {value.replace("_", " ")}
             </button>
           ))}
         </div>
 
-        <div className="aspect-[1/1.08] w-full rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.98))] p-4">
+        <div className="aspect-[1/1.08] w-full border border-white/8 bg-[#050914] p-3">
           <svg viewBox="0 0 100 108" className="h-full w-full overflow-visible">
             <rect x="12" y="8" width="76" height="92" rx="8" fill="rgba(148,163,184,0.08)" stroke="rgba(148,163,184,0.18)" strokeWidth="0.6" />
             {overlayMode !== "dots" ? zoneCells.map((cell) => (
@@ -241,15 +239,24 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
 
             {overlayMode !== "sequence" ? chartPoints.map(({ pitch, px, py, key }) => {
               const active = activePitch === pitch;
+              const muted = overlayMode !== "dots" && !active;
               return (
                 <g
                   key={key}
                   className="cursor-pointer"
-                  onMouseEnter={() => setHoveredPitch(pitch)}
-                  onMouseLeave={() => setHoveredPitch((current) => (lockedPitch ? current : null))}
-                  onClick={() => setLockedPitch((current) => current === pitch ? null : pitch)}
+                  onMouseEnter={() => {
+                    if (!lockedPitch) setHoveredPitch(pitch);
+                  }}
+                  onMouseLeave={() => {
+                    if (!lockedPitch) setHoveredPitch(null);
+                  }}
+                  onClick={() => {
+                    setLockedPitch((current) => current === pitch ? null : pitch);
+                    setHoveredPitch(null);
+                  }}
                 >
-                  <PitchGlyph pitch={pitch} cx={px} cy={py} active={active} />
+                  <circle cx={px} cy={py} r={6.8} fill="transparent" />
+                  <PitchGlyph pitch={pitch} cx={px} cy={py} active={active} muted={muted} />
                 </g>
               );
             }) : null}
@@ -258,22 +265,22 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+        <div className="border border-white/8 bg-white/[0.03] p-4 sm:p-5">
           <div className="mb-3 font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Pitch type filter</div>
           <div className="flex flex-wrap gap-2">
             {pitchTypes.map((pitchType) => (
-              <button key={pitchType} type="button" onClick={() => togglePitchType(pitchType)} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${selectedPitchTypes.includes(pitchType) ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-300" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+              <button key={pitchType} type="button" onClick={() => togglePitchType(pitchType)} className={`border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${selectedPitchTypes.includes(pitchType) ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-300" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
                 {pitchType}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+        <div className="border border-white/8 bg-white/[0.03] p-4 sm:p-5">
           <div className="mb-3 font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Result filter</div>
           <div className="flex flex-wrap gap-2">
             {Object.entries(RESULT_STYLES).map(([result, meta]) => (
-              <button key={result} type="button" onClick={() => toggleResult(result as Pitch["result"])} className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${selectedResults.includes(result as Pitch["result"]) ? "border-white/20 bg-white/10 text-white" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
+              <button key={result} type="button" onClick={() => toggleResult(result as Pitch["result"])} className={`border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition ${selectedResults.includes(result as Pitch["result"]) ? "border-white/20 bg-white/10 text-white" : "border-white/8 bg-white/[0.03] text-slate-400 hover:text-slate-100"}`}>
                 <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ backgroundColor: meta.color }} />
                 {meta.label}
               </button>
@@ -281,11 +288,11 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+        <div className="border border-white/8 bg-white/[0.03] p-4 sm:p-5">
           <div className="mb-3 font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Visible legend</div>
           <div className="space-y-2">
             {visibleLegend.map((item) => (
-              <div key={item.result} className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-slate-950/60 px-3 py-2 text-sm text-slate-300">
+              <div key={item.result} className="flex items-center justify-between gap-3 border border-white/8 bg-slate-950/60 px-3 py-2 text-sm text-slate-300">
                 <div className="flex items-center gap-2">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                   <span>{item.label}</span>
@@ -297,13 +304,13 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
         </div>
 
         {overlayMode === "sequence" ? (
-          <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          <div className="border border-white/8 bg-white/[0.03] p-4 sm:p-5">
             <div className="mb-3 font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Sequence mode</div>
             <div className="space-y-3">
               {sequences.map(([key, sequence]) => (
-                <div key={key} className="rounded-2xl border border-white/8 bg-slate-950/60 p-3">
+                <div key={key} className="border border-white/8 bg-slate-950/60 p-3">
                   <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-slate-500">
-                    Game {sequence[0]?.gamePk || "N/A"} • AB {sequence[0]?.abNumber || "N/A"}
+                    Game {sequence[0]?.gamePk || "Not enough data"} - AB {sequence[0]?.abNumber || "Not enough data"}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {sequence.map((pitch, index) => (
@@ -311,7 +318,7 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
                         key={`${key}-${index}`}
                         type="button"
                         onClick={() => setLockedPitch(pitch)}
-                        className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-300"
+                        className="border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.16em] text-slate-300"
                       >
                         {index + 1}. {pitch.pitchType} {RESULT_STYLES[pitch.result].label}
                       </button>
@@ -322,11 +329,11 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
             </div>
           </div>
         ) : (
-          <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          <div className={`border p-4 sm:p-5 ${isPinned ? "border-cyan-300/30 bg-cyan-300/[0.04]" : "border-white/8 bg-white/[0.03]"}`}>
             <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">Pitch tooltip</div>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.2em] text-slate-500">{isPinned ? "Pinned pitch" : "Pitch preview"}</div>
               {lockedPitch ? (
-                <button type="button" onClick={() => setLockedPitch(null)} className="rounded-full border border-white/10 p-1 text-slate-400 transition hover:text-white">
+                <button type="button" onClick={() => setLockedPitch(null)} className="border border-white/10 p-1 text-slate-400 transition hover:text-white" aria-label="Clear pinned pitch">
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : null}
@@ -335,15 +342,15 @@ export function StrikeZoneChart({ pitches, isLoading = false }: StrikeZoneChartP
               <div className="space-y-2 text-sm text-slate-300">
                 <div className="text-[clamp(1rem,1vw,1.125rem)] font-semibold text-white">{activePitch.pitchType}</div>
                 <div>Result: {RESULT_STYLES[activePitch.result].label}</div>
-                <div>Velocity: {activePitch.velocity ? `${activePitch.velocity.toFixed(1)} mph` : "Unavailable"}</div>
-                <div>Count: {activePitch.count || "Unavailable"}</div>
-                <div>Pitcher hand: {activePitch.pitcherHand || "Unavailable"}</div>
-                <div>Inning: {activePitch.inning || "Unavailable"}</div>
-                <div>Game: {activePitch.gameDate || "Unavailable"}</div>
+                <div>Velocity: {activePitch.velocity ? `${activePitch.velocity.toFixed(1)} mph` : "Not enough data"}</div>
+                <div>Count: {activePitch.count || "Not enough data"}</div>
+                <div>Pitcher hand: {activePitch.pitcherHand || "Not enough data"}</div>
+                <div>Inning: {activePitch.inning || "Not enough data"}</div>
+                <div>Game: {activePitch.gameDate || "Not enough data"}</div>
                 <div className="text-slate-400">{activePitch.description || "No play description provided."}</div>
               </div>
             ) : (
-              <div className="text-sm leading-7 text-slate-400">Hover any pitch to inspect it. Click one to lock the tooltip open.</div>
+              <div className="text-sm leading-7 text-slate-400">Hover any pitch to preview it. Click one to pin it so the readout stops changing.</div>
             )}
           </div>
         )}
