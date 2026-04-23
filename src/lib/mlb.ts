@@ -1,3 +1,5 @@
+import { nationalTeamLabel, normalizeCountry } from "@/lib/country-flags";
+
 export type PlayerSearchItem = {
   playerId: number;
   fullName: string;
@@ -78,6 +80,8 @@ export type PlayerProfile = {
     debutDate: string | null;
     status: string;
     headshotUrl: string;
+    country: string | null;
+    nationalTeam: string | null;
   };
   type: "hitter" | "pitcher";
   sample: {
@@ -168,6 +172,7 @@ type MlbPerson = {
   weight?: number;
   mlbDebutDate?: string;
   nameSlug?: string;
+  birthCountry?: string;
 };
 
 const SEASON = new Date().getFullYear();
@@ -887,6 +892,8 @@ export async function fetchPlayerProfile(playerId: number, bust = false): Promis
       debutDate: person.mlbDebutDate || null,
       status: person.active ? "Active" : "Inactive",
       headshotUrl: headshotUrl(person.id),
+      country: normalizeCountry(person.birthCountry),
+      nationalTeam: nationalTeamLabel(person.birthCountry),
     },
     type,
     sample,

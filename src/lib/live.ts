@@ -24,7 +24,7 @@ export function formatLiveClock(now: Date) {
     hour: "numeric",
     minute: "2-digit",
   }).format(now);
-  return `LIVE • ${date}, ${time} ET`;
+  return `LIVE - ${date}, ${time} ET`;
 }
 
 export function classifyGameState(status?: string | null): LiveStateTag {

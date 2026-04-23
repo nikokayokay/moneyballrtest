@@ -1,57 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { BarChart3, ChevronDown, Gauge, Search, Shield, Trophy, Users } from "lucide-react";
-
-type MenuItem = {
-  label: string;
-  href: string;
-  description: string;
-};
-
-type MenuGroup = {
-  label: string;
-  icon: typeof Users;
-  items: MenuItem[];
-};
-
-const groups: MenuGroup[] = [
-  {
-    label: "Players",
-    icon: Users,
-    items: [
-      { label: "Player Search", href: "/players", description: "Active roster index with live profile routing." },
-      { label: "Impact Sphere", href: "/", description: "Today’s top weighted performance signals." },
-      { label: "Prospect Watch", href: "/discover", description: "Limited-sample players and rising profiles." },
-    ],
-  },
-  {
-    label: "Games",
-    icon: Gauge,
-    items: [
-      { label: "Game Center", href: "/games", description: "Live and recent scoreboards with key performer context." },
-      { label: "Today’s Slate", href: "/", description: "Scores, status tags, and performers that matter now." },
-      { label: "Game Logs", href: "/discover", description: "Newest-player context and recent form surfaces." },
-    ],
-  },
-  {
-    label: "Analytics",
-    icon: BarChart3,
-    items: [
-      { label: "Leaderboards", href: "/leaderboards", description: "Hot hitters, process leaders, rolling trends." },
-      { label: "Decision Tools", href: "/dashboard", description: "Search-first entry point for model-driven reads." },
-      { label: "Trend Discovery", href: "/discover", description: "Anomalies, streaks, and under-the-radar performers." },
-    ],
-  },
-  {
-    label: "Teams",
-    icon: Shield,
-    items: [
-      { label: "Team Overview", href: "/teams", description: "Roster context, team identity, and standings framing." },
-      { label: "Top Team Bats", href: "/leaderboards", description: "Team leaders through the same player profile system." },
-      { label: "Prospect Systems", href: "/discover", description: "Future impact, sample flags, and scouting watch." },
-    ],
-  },
-];
+import { ChevronDown, Search, Trophy } from "lucide-react";
+import { FEATURE_GROUPS, TOP_NAV_LINKS } from "@/lib/navigation-system";
 
 export function MegaMenu() {
   const [open, setOpen] = useState(false);
@@ -59,14 +9,7 @@ export function MegaMenu() {
   return (
     <div className="relative">
       <div className="hidden items-center gap-1 lg:flex">
-        {[
-          ["/", "Today"],
-          ["/players", "Players"],
-          ["/teams", "Teams"],
-          ["/games", "Games"],
-          ["/leaderboards", "Leaders"],
-          ["/discover", "Discover"],
-        ].map(([href, label]) => (
+        {TOP_NAV_LINKS.map(({ href, label }) => (
           <NavLink
             key={href}
             to={href}
@@ -93,7 +36,7 @@ export function MegaMenu() {
           <Search className="mr-1 inline h-3.5 w-3.5 text-emerald-300" />
           Search
         </Link>
-        <Link to="/dashboard" className="border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 font-['Barlow_Condensed'] text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
+        <Link to="/live" className="border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 font-['Barlow_Condensed'] text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
           Live
         </Link>
       </div>
@@ -104,7 +47,7 @@ export function MegaMenu() {
           onMouseLeave={() => setOpen(false)}
         >
           <div className="grid grid-cols-2 gap-2">
-            {groups.map((group) => {
+            {FEATURE_GROUPS.map((group) => {
               const Icon = group.icon;
               return (
                 <section key={group.label} className="border border-white/6 bg-white/[0.025] p-3">
@@ -122,6 +65,7 @@ export function MegaMenu() {
                       >
                         <div className="font-['Barlow_Condensed'] text-lg font-semibold uppercase tracking-[0.08em] text-white">{item.label}</div>
                         <div className="mt-0.5 text-xs leading-5 text-slate-500">{item.description}</div>
+                        <div className="mt-1 font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.14em] text-cyan-200/60">{item.engine}</div>
                       </Link>
                     ))}
                   </div>

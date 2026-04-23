@@ -1,5 +1,6 @@
 import type { PlayerProfile } from "@/src/lib/mlb";
 import { InsightTag } from "@/src/components/player/InsightTag";
+import { countryFlagUrl } from "@/lib/country-flags";
 
 type PlayerHeroPanelProps = {
   profile: PlayerProfile;
@@ -19,6 +20,7 @@ function liveTone(state: PlayerProfile["liveGame"]["state"]) {
 }
 
 export function PlayerHeroPanel({ profile }: PlayerHeroPanelProps) {
+  const flag = countryFlagUrl(profile.identity.country);
   const metadata = [
     profile.identity.team,
     profile.identity.position,
@@ -40,6 +42,12 @@ export function PlayerHeroPanel({ profile }: PlayerHeroPanelProps) {
                 {profile.liveGame.state === "NO_GAME" ? "No game today" : profile.liveGame.state}
               </InsightTag>
               <InsightTag tone={trendTone(profile.confidence.trend)}>{profile.confidence.trend}</InsightTag>
+              {profile.identity.nationalTeam ? (
+                <span className="inline-flex items-center gap-2 border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.14em] text-cyan-100">
+                  {flag ? <img src={flag} alt={`${profile.identity.country} flag`} className="h-3 w-5 rounded-[3px] object-cover" loading="lazy" /> : null}
+                  {profile.identity.nationalTeam}
+                </span>
+              ) : null}
             </div>
             <h1 className="mt-3 truncate font-['Bebas_Neue'] text-[clamp(3rem,8vw,6.8rem)] leading-[0.82] tracking-[0.035em] text-white">
               {profile.identity.fullName}

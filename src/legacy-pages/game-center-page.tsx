@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Radio } from "lucide-react";
+import { boostImpactByLeverage, calculateLeverageIndex, clutchLabel } from "@/lib/leverage-index";
+import { rankDailySlate } from "@/lib/daily-slate-engine";
 import { KeyPerformerCard } from "@/src/components/game/KeyPerformerCard";
 import { PageShell, SectionHeader } from "@/src/components/layout/PageShell";
 import { InsightTag } from "@/src/components/player/InsightTag";
+import { getImpactPlayers } from "@/lib/data-engine";
 import { currentMlbDate, LIVE_REFRESH_MS, NEAR_REALTIME_REFRESH_MS } from "@/src/lib/live";
-import { fetchImpactPlayers } from "@/src/services/impactPlayers";
 
 type ScheduleGame = {
   gamePk: number;
@@ -39,10 +41,18 @@ export function GameCenterPage() {
   });
   const performers = useQuery({
     queryKey: ["game-center-performers"],
-    queryFn: () => fetchImpactPlayers(8),
+    queryFn: () => getImpactPlayers(8),
     staleTime: NEAR_REALTIME_REFRESH_MS,
   });
   const games = schedule.data || [];
+  const slate = rankDailySlate(games.map((game) => ({
+    id: game.gamePk,
+    awayTeam: game.teams?.away?.team?.name || "Away",
+    homeTeam: game.teams?.home?.team?.name || "Home",
+    awayScore: game.teams?.away?.score,
+    homeScore: game.teams?.home?.score,
+    status: game.status?.detailedState || "Scheduled",
+  })));
 
   return (
     <PageShell>
@@ -63,6 +73,14 @@ export function GameCenterPage() {
                 const away = game.teams?.away;
                 const home = game.teams?.home;
                 const status = game.status?.detailedState || "Scheduled";
+                const context = {
+                  inning: Number(String(game.linescore?.currentInningOrdinal || "1").replace(/\D/g, "")) || 1,
+                  outs: game.linescore?.outs || 0,
+                  awayScore: away?.score,
+                  homeScore: home?.score,
+                  battingTeamIsHome: true,
+                };
+                const leverageIndex = calculateLeverageIndex(context);
                 return (
                   <div key={game.gamePk} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-3 border border-white/8 bg-white/[0.025] p-3">
                     <div className="truncate text-sm text-slate-300">{away?.team?.name || "Away"}</div>
@@ -74,7 +92,7 @@ export function GameCenterPage() {
                     </div>
                     <div className="col-span-full flex items-center gap-2 text-xs text-slate-500">
                       <Clock className="h-3.5 w-3.5" />
-                      {game.linescore?.currentInningOrdinal || "Pregame"} | Outs {game.linescore?.outs ?? 0}
+                      {game.linescore?.currentInningOrdinal || "Pregame"} | Outs {game.linescore?.outs ?? 0} | LI {leverageIndex} | {clutchLabel(leverageIndex)}
                     </div>
                   </div>
                 );
@@ -85,6 +103,18 @@ export function GameCenterPage() {
             <div className="mb-label">Key performers</div>
             <div className="mt-3 space-y-2">
               {(performers.data || []).slice(0, 5).map((player) => <KeyPerformerCard key={player.id} player={player} />)}
+            </div>
+            <div className="mb-label mt-5 text-cyan-200">Daily slate priority</div>
+            <div className="mt-3 space-y-2">
+              {slate.slice(0, 4).map((game) => (
+                <div key={game.id} className="border border-white/8 bg-white/[0.025] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="truncate text-sm text-slate-300">{game.awayTeam} @ {game.homeTeam}</div>
+                    <div className="font-['Bebas_Neue'] text-3xl leading-none text-emerald-300">{game.watchScore}</div>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">{game.label} · clutch boosted sample {boostImpactByLeverage(game.watchScore, { inning: 8, homeScore: 3, awayScore: 2, outs: 1 }).toString()}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

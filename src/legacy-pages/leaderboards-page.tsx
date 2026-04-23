@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AreaTrendChart } from "@/src/components/charts/AreaTrendChart";
 import { PageShell, SectionHeader } from "@/src/components/layout/PageShell";
 import { InsightTag } from "@/src/components/player/InsightTag";
-import { fetchImpactPlayers } from "@/src/services/impactPlayers";
+import { getImpactPlayers } from "@/lib/data-engine";
 import { NEAR_REALTIME_REFRESH_MS } from "@/src/lib/live";
 
 function tone(trend: string) {
@@ -15,11 +15,13 @@ function tone(trend: string) {
 }
 
 export function LeaderboardsPage() {
-  const [preset, setPreset] = useState("impact");
+  const [params] = useSearchParams();
+  const statParam = params.get("stat");
+  const [preset, setPreset] = useState(statParam || "impact");
   const [teamFilter, setTeamFilter] = useState("all");
   const query = useQuery({
     queryKey: ["leaderboard-impact"],
-    queryFn: () => fetchImpactPlayers(60),
+    queryFn: () => getImpactPlayers(60),
     staleTime: NEAR_REALTIME_REFRESH_MS,
     refetchInterval: NEAR_REALTIME_REFRESH_MS,
   });
@@ -27,6 +29,8 @@ export function LeaderboardsPage() {
   const teams = useMemo(() => [...new Set(players.map((player) => player.team))].sort(), [players]);
   const filtered = useMemo(() => {
     const base = teamFilter === "all" ? players : players.filter((player) => player.team === teamFilter);
+    if (preset === "homeRuns") return [...base].sort((a, b) => b.score - a.score);
+    if (preset === "ops" || preset === "avg" || preset === "strikeOuts" || preset === "era") return base;
     if (preset === "hottest") return [...base].sort((a, b) => (b.last7Woba || 0) - (a.last7Woba || 0));
     if (preset === "process") return [...base].sort((a, b) => ((b.last7Woba || 0) - (b.woba || 0)) - ((a.last7Woba || 0) - (a.woba || 0)));
     if (preset === "power") return base.filter((player) => (player.woba || 0) >= 0.340);

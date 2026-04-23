@@ -2,7 +2,14 @@
 
 :root {
   color-scheme: dark;
-  --page-gutter: clamp(1rem, 2vw, 2rem);
+  --fib-4: 4px;
+  --fib-8: 8px;
+  --fib-12: 12px;
+  --fib-20: 20px;
+  --fib-32: 32px;
+  --fib-52: 52px;
+  --fib-84: 84px;
+  --page-gutter: clamp(var(--fib-20), 2vw, var(--fib-32));
   --mb-bg: #050914;
   --mb-surface-1: #080d16;
   --mb-surface-2: #0b121d;
@@ -23,7 +30,7 @@ body {
   margin: 0;
   min-width: 320px;
   background: #050914;
-  font-size: clamp(0.95rem, 0.35vw + 0.9rem, 1.02rem);
+  font-size: 12px;
 }
 
 * {
@@ -117,11 +124,11 @@ input {
 .mb-shell {
   width: min(96rem, 100%);
   margin-inline: auto;
-  padding-inline: clamp(1rem, 2vw, 2rem);
+  padding-inline: var(--page-gutter);
 }
 
 .mb-section {
-  margin-top: clamp(0.75rem, 1.4vw, 1.25rem);
+  margin-top: var(--fib-32);
 }
 
 .surface-primary {
@@ -151,6 +158,7 @@ input {
   font-family: "Bebas Neue", sans-serif;
   letter-spacing: 0.055em;
   line-height: 0.9;
+  font-size: 32px;
 }
 
 .mb-meta {
@@ -162,11 +170,51 @@ input {
 .weighted-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: clamp(0.75rem, 1.2vw, 1.25rem);
+  gap: var(--fib-20);
 }
 
 @media (min-width: 1024px) {
   .weighted-grid {
     grid-template-columns: minmax(0, 1.618fr) minmax(18rem, 1fr);
+  }
+}
+
+.fib-section {
+  margin-top: var(--fib-52);
+}
+
+.fib-panel {
+  border-radius: var(--fib-32);
+  padding: var(--fib-20);
+}
+
+.fib-grid-2-3-5 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fib-20);
+}
+
+.fib-card-sm {
+  min-inline-size: 160px;
+}
+
+.fib-card-md {
+  inline-size: min(100%, 320px);
+}
+
+.fib-card-lg {
+  inline-size: min(100%, 520px);
+}
+
+@media (min-width: 768px) {
+  .fib-grid-2-3-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .fib-grid-2-3-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--fib-32);
   }
 }

@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { AreaTrendChart } from "@/src/components/charts/AreaTrendChart";
 import { PageShell, SectionHeader } from "@/src/components/layout/PageShell";
+import { FarmSystemPanel } from "@/src/components/milb/FarmSystemPanel";
+import { FARM_SYSTEMS, farmSystemScore, orgName } from "@/src/data/milb";
 import { fetchRosterDirectory, type PlayerSearchItem } from "@/src/lib/mlb";
 
 const teamMeta: Record<string, { market: string; note: string }> = {
@@ -77,8 +79,8 @@ export function TeamsPage() {
                   </div>
                 </div>
                 <div className="border border-white/8 bg-white/[0.03] px-3 py-2 text-right">
-                  <div className="font-['Bebas_Neue'] text-3xl leading-none tracking-[0.06em] text-emerald-300">{team.count}</div>
-                  <div className="mb-label mt-1 text-[8px]">players</div>
+                  <div className="font-['Bebas_Neue'] text-3xl leading-none tracking-[0.06em] text-emerald-300">{FARM_SYSTEMS[team.abbr] ? farmSystemScore(team.abbr) : team.count}</div>
+                  <div className="mb-label mt-1 text-[8px]">{FARM_SYSTEMS[team.abbr] ? "farm" : "players"}</div>
                 </div>
               </div>
               <div className="mt-4 space-y-2">
@@ -90,7 +92,24 @@ export function TeamsPage() {
                   </Link>
                 ))}
               </div>
+              {FARM_SYSTEMS[team.abbr] ? (
+                <Link to={`/minor-leagues?team=${team.abbr}`} className="mt-3 inline-flex items-center font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.16em] text-emerald-300 transition hover:text-emerald-100">
+                  Open farm system
+                </Link>
+              ) : null}
             </section>
+          ))}
+        </div>
+      </section>
+      <section className="mb-section surface-primary">
+        <SectionHeader
+          eyebrow="Farm systems"
+          title="Development pipeline by organization"
+          copy="Mapped affiliates render AAA through Single-A, with tracked prospects translated through the same development scoring layer."
+        />
+        <div className="grid grid-cols-1 gap-3 p-3 xl:grid-cols-2">
+          {Object.keys(FARM_SYSTEMS).map((orgAbbr) => (
+            <FarmSystemPanel key={orgAbbr} orgAbbr={orgAbbr} teamName={orgName(orgAbbr)} compact />
           ))}
         </div>
       </section>

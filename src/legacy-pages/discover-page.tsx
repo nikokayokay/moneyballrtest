@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/src/components/layout/PageShell";
 import { InsightTag } from "@/src/components/player/InsightTag";
 import { PlayerSearch } from "@/src/components/player-search";
-import { fetchImpactPlayers } from "@/src/services/impactPlayers";
+import { getImpactPlayers } from "@/lib/data-engine";
 import { NEAR_REALTIME_REFRESH_MS } from "@/src/lib/live";
 
 export function DiscoverPage() {
   const query = useQuery({
     queryKey: ["discover-impact"],
-    queryFn: () => fetchImpactPlayers(60),
+    queryFn: () => getImpactPlayers(60),
     staleTime: NEAR_REALTIME_REFRESH_MS,
     refetchInterval: NEAR_REALTIME_REFRESH_MS,
   });
@@ -45,7 +45,7 @@ export function DiscoverPage() {
   );
 }
 
-function SignalColumn({ title, players, tone }: { title: string; players: Awaited<ReturnType<typeof fetchImpactPlayers>>; tone: "positive" | "warning" | "negative" }) {
+function SignalColumn({ title, players, tone }: { title: string; players: Awaited<ReturnType<typeof getImpactPlayers>>; tone: "positive" | "warning" | "negative" }) {
   return (
     <section className="surface-secondary p-4">
       <div className="flex items-center justify-between gap-3">
